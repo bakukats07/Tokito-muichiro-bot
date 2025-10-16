@@ -12,30 +12,28 @@ global.botNumber = "" //Ejemplo: 573218138672
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.owner = [
-"573196588149",
-"5492916450307",
-"5216671548329"
+"573004828388"
 ]
 
-global.suittag = ["573196588149"] 
+global.suittag = ["573004828388"] 
 global.prems = []
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.libreria = "Baileys Multi Device"
 global.vs = "^1.8.2|Latest"
-global.nameqr = "YukiBot-MD"
+global.nameqr = "Tokito-muichiro-bot"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
 global.yukiJadibts = true
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
-global.botname = "ᥡᥙkі sᥙ᥆ᥙ"
-global.textbot = "ᥡᥙkі, mᥲძᥱ ᥕі𝗍һ ᑲᥡ ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ"
-global.dev = "© ⍴᥆ᥕᥱrᥱძ ᑲᥡ ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜"
-global.author = "© mᥲძᥱ ᥕі𝗍һ ᑲᥡ ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜"
-global.etiqueta = "ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜"
+global.botname = "tokito Muichiro"
+global.textbot = "ᥡᥙkі, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud"
+global.dev = "© ⍴᥆ᥕᥱrᥱძ ᑲᥡ skycloud"
+global.author = "© mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud"
+global.etiqueta = "Skycloud"
 global.currency = "¥enes"
 global.banner = "https://raw.githubusercontent.com/The-King-Destroy/Adiciones/main/Contenido/1742678744381.jpeg"
 global.icono = "https://raw.githubusercontent.com/The-King-Destroy/Adiciones/main/Contenido/1742678797993.jpeg"
