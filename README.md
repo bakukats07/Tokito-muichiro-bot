@@ -183,5 +183,5 @@ href="https://home.akirax.net"><img src="https://raw.githubusercontent.com/The-K
 
 ### **`ᥫ᭡ Propietario`**
 <a
-href="https://github.com/The-King-Destroy"><img src="https://github.com/The-King-Destroy.png" width="130" height="130" alt="
-ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜"/></a>
+href="https://github.com/bakukats07"><img src="https://github.com/bakukats07.png" width="130" height="130" alt="
+"/></a>
