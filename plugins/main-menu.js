@@ -472,31 +472,18 @@ const textoMenu = `
 
 
 // 🖼️ Enviar el menú con banner + icono  
-await conn.sendMessage(m.chat, {  
-  text: textoMenu.trim(),  
-  contextInfo: {  
-    externalAdReply: {  
-      title: botname,  
-      body: textbot,  
-      thumbnailUrl: icono, // icono pequeño  
-      mediaType: 1,  
-      sourceUrl: redes,  
-      renderLargerThumbnail: true,  
-      mediaUrl: banner // banner/video principal  
-    }  
-  }  
+await conn.sendMessage(m.chat, {
+  text: menuText,
+  mentions: [m.sender],
+  contextInfo: {
+    externalAdReply: {
+      title: botname,
+      body: textbot,
+      thumbnailUrl: global.icono,
+      mediaType: 1,
+      sourceUrl: global.github,
+      renderLargerThumbnail: true,
+      mediaUrl: global.banner
+    }
+  }
 }, { quoted: m })
-
-} catch (e) {
-console.error(e)
-m.reply('⚠️ Ocurrió un error al mostrar el menú. Verifica tu conexión o los enlaces del banner.')
-}
-}
-
-handler.command = ['menu', 'menú', 'help']
-handler.tags = ['main']
-handler.help = ['menu', 'help']
-export default handler
-
-
-
