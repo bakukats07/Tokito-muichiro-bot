@@ -29,7 +29,8 @@ Extensiones adicionales
 <a
 href="https://f-droid.org/es/packages/com.termux/"><img src="https://qu.ax/finc.jpg" height="125px"></a> 
 
-### **`➮ Instalación por termux`**
+> ˚.💻⋆*No descargues las apk que lleven nombre de* ***`beta`***, *se recomiendan que sean apk confiables, ya que la tienda de play store no se actualiza consecutivamente*
+### **`☝️ Instalación por termux`**
 <details>
 <summary><b>✰ Instalación Manual</b></summary>
 
