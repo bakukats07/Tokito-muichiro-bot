@@ -2,6 +2,9 @@ import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
 try {
+const userId = m.sender
+const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
+const totalCommands = Object.keys(global.plugins || {}).length || 0
 
 // 🧠 Variables globales desde settings.js
 
@@ -476,17 +479,15 @@ const textoMenu = `
 // 🖼️ Enviar el menú con banner + icono
   
 await conn.sendMessage(m.chat, {
-  text: menuText,
-  mentions: [m.sender],
-  contextInfo: {
-    externalAdReply: {
-      title: botname,
-      body: textbot,
-      thumbnailUrl: global.icono,
-      mediaType: 1,
-      sourceUrl: global.github,
-      renderLargerThumbnail: true,
-      mediaUrl: global.banner
-    }
-  }
-}, { quoted: m })
+ } catch (err) {
+  console.error(err)
+  m.reply('❌ Hubo un error al mostrar el menú.')
+}
+}
+
+handler.help = ['menu']
+handler.tags = ['main']
+handler.command = ['menu', 'help', 'menú']
+
+export default handler
+  
