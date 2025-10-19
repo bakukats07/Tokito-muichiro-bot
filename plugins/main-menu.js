@@ -29,7 +29,7 @@ const textoMenu = `
 ╭┈ࠢ͜┅ࠦ͜͜╾݊͜─ؕ͜─ׄ͜─֬͜─֟͜─֫͜─ׄ͜─ؕ͜─݊͜┈ࠦ͜┅ࠡ͜͜┈࠭͜͜۰۰͜۰
 │✦ Tipo » ${(conn.user.jid == global.conn.user.jid ? 'Principal' : 'Sub-Bot')}
 │✰ Usuarios » ${totalreg.toLocaleString()}
-│⚘ Versión » ${vs}
+│⚘ Versión » ${version}
 │ꕥ Plugins » ${totalCommands}
 │🜸 Librería » ${libreria}
 ╰ׅ┈ࠢ͜─ׄ͜─ׄ֟፝͜─ׄ͜─ׄ͜╴ ⋱࣭ ᩴ  ⋮֔   ᩴ ⋰╶͜─ׄ͜─ׄ֟፝͜─ׄ͜─ׄ͜┈ࠢ͜╯ׅ
@@ -477,12 +477,25 @@ const textoMenu = `
 
 
 // 🖼️ Enviar el menú con banner + icono
-  
+
 await conn.sendMessage(m.chat, {
- } catch (err) {
-  console.error(err)
-  m.reply('❌ Hubo un error al mostrar el menú.')
-}
+  image: { url: banner }, // Imagen de banner desde settings.js
+  caption: textoMenu,
+  contextInfo: {
+    externalAdReply: {
+      title: botname,
+      body: textbot,
+      thumbnailUrl: icono,
+      sourceUrl: redes,
+      mediaType: 1,
+      renderLargerThumbnail: true
+    }
+  }
+}, { quoted: m })
+} catch (err) {
+    console.error(err)
+    m.reply('❌ Hubo un error al mostrar el menú.')
+  }
 }
 
 handler.help = ['menu']
@@ -490,4 +503,3 @@ handler.tags = ['main']
 handler.command = ['menu', 'help', 'menú']
 
 export default handler
-  
