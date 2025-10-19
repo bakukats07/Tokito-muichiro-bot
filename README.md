@@ -4,16 +4,16 @@
 </p>
 
 ### *`❕️ Información importante`*
-Este proyecto **no está afiliado de ninguna manera** con `WhatsApp`, `Inc. WhatsApp` es una marca registrada de `WhatsApp LLC`, y este bot es un **desarrollo independiente** que **no tiene ninguna relación oficial con la compañía**.
+୧⍤⃝🛩️—Este proyecto **no está afiliado de ninguna manera** con `WhatsApp`, `Inc. WhatsApp` es una marca registrada de `WhatsApp LLC`, y este bot es un **desarrollo independiente** que **no tiene ninguna relación oficial con la compañía**.
 
-—Este proyecto es una rama derivada del bot `YukiBot-MD` por ahora no es independiente, creditos a "The-King-Destroy"
+୧⍤⃝🌫️—Este proyecto **es una rama derivada del bot** `YukiBot-MD` por ahora no es independiente, creditos a "The-King-Destroy"
 <details>
 <summary><b> ➮ Descripción</b></summary>
 
-Yuki Bot es un bot de WhatsApp multifuncional basado en `baileys`. Este bot ofrece una variedad de características para mejorar tu experiencia en WhatsApp.
+୧⍤⃝❄️—Tokito Bot es un bot de WhatsApp multifuncional basado en `baileys`. Este bot ofrece una variedad de características para mejorar tu experiencia en WhatsApp.
 
 #### Características
-Configuración avanzada de grupos 
+୧⍤⃝💍—Configuración avanzada de grupos 
 Bienvenidas personalizadas  
 Herramientas útiles  
 Juegos RPG (Gacha y Economía)  
