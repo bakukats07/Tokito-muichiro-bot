@@ -59,42 +59,42 @@ npm start
 <details>
   <summary><b>🔜 Comandos para mantener más tiempo activo el Bot</b></summary>
 
-> *Ejecutar estos comandos dentro de la carpeta Muichiro-MD*
+> 🤓*Ejecutar estos comandos dentro de la carpeta Muichiro-MD*
 ```bash
 termux-wake-lock && npm i -g pm2 && pm2 start index.js && pm2 save && pm2 logs 
 ``` 
-#### Opciones Disponibles
+#### ☑️Opciones Disponibles
 > *Esto eliminará todo el historial que hayas establecido con PM2:*
 ```bash 
 pm2 delete index
 ``` 
-> *Si tienes cerrado Termux y quiere ver de nuevo la ejecución use:*
+> ❌*Si tienes cerrado Termux y quiere ver de nuevo la ejecución use:*
 ```bash 
 pm2 logs 
 ``` 
-> *Si desea detener la ejecución de Termux use:*
+> 🛑*Si desea detener la ejecución de Termux use:*
 ```bash 
 pm2 stop index
 ``` 
-> *Si desea iniciar de nuevo la ejecución de Termux use:*
+> 🔌*Si desea iniciar de nuevo la ejecución de Termux use:*
 ```bash 
 pm2 start index
 ```
 ---- 
-### En caso de detenerse
+### ✋En caso de detenerse
 > _Si despues que ya instalastes el bot y termux te salta en blanco, se fue tu internet o reiniciaste tu celular, solo realizaras estos pasos:_
 ```bash
 cd && cd Muichiro-MD && npm start
 ```
 ----
-### Obtener nuevo código QR 
+### 🔢Obtener nuevo código QR 
 > *Detén el bot, haz click en el símbolo (ctrl) [default=z] usar la letra "z" + "ENTER" hasta que salga algo verdes similar a: `~Muichiro-MD $`*
 > **Escribe los siguientes comandos uno x uno :**
 ```bash 
 cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run qr
 ```
 ----
-### Obtener nuevo código de teléfono 
+### ⛩️Obtener nuevo código de teléfono 
 ```bash 
 cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run code
 ```
@@ -110,7 +110,7 @@ cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run code
 ```bash
 grep -q 'bash\|wget' <(dpkg -l) || apt install -y bash wget && wget -O - https://raw.githubusercontent.com/DevAlexJs/SakuraBot-MD/master/termux.sh | bash 
 ```
-**✰ Volverte owner del Bot**
+**👑 Volverte owner del Bot**
 
 *Si después de instalar el bot e iniciar la sesión (deseas poner tu número es la lista de owner pon este comando:*
 
@@ -122,10 +122,10 @@ cd && cd Muichiro-MD && nano settings.js
 </details>
 
 ---
-### **`➮ Enlaces útiles`**
+### **`👩‍💻 Enlaces útiles`**
 
 <details>
-<summary><b> 🜸 Enlaces Oficiales </b></summary>
+<summary><b> ☝️ Enlaces Oficiales </b></summary>
 
  * Canal Oficial  [`pulsa aqui🥺`](https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M)
 * Grupo Oficial [`oprimeme😖`](https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt)
