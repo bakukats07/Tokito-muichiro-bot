@@ -2,7 +2,9 @@ import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
 try {
+
 // 🧠 Variables globales desde settings.js
+
 const botname = global.botname || 'Muichiro Bot'
 const creador = global.etiqueta || 'By Skycloud'
 const version = global.vs || '1.0.0'
@@ -471,7 +473,8 @@ const textoMenu = `
 
 
 
-// 🖼️ Enviar el menú con banner + icono  
+// 🖼️ Enviar el menú con banner + icono
+  
 await conn.sendMessage(m.chat, {
   text: menuText,
   mentions: [m.sender],
