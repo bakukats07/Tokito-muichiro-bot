@@ -178,8 +178,8 @@ href="https://home.akirax.net"><img src="https://raw.githubusercontent.com/The-K
 ---
 
 ### **`❀ Creditos`**
-<a href="https://github.com/The-King-Destroy/Yuki_Suou-Bot/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=The-King-Destroy/Yuki_Suou-Bot" /> 
+<a href="https://github.com/The-King-Destroy">
+<img src="https://github.com/The-King-Destroy" /> 
 </a>
 
 ### **`ᥫ᭡ Propietario`**
