@@ -27,7 +27,7 @@ Extensiones adicionales
 
 ### **`✧ Click en la imagen para descargar termux ✧`**
 <a
-href="https://www.mediafire.com/file/wkinzgpb0tdx5qh/com.termux_1022.apk/file"><img src="https://qu.ax/finc.jpg" height="125px"></a> 
+href="https://f-droid.org/es/packages/com.termux/"><img src="https://qu.ax/finc.jpg" height="125px"></a> 
 
 ### **`➮ Instalación por termux`**
 <details>
@@ -58,7 +58,7 @@ npm start
 <details>
   <summary><b>🜸 Comandos para mantener más tiempo activo el Bot</b></summary>
 
-> *Ejecutar estos comandos dentro de la carpeta YukiBot-MD*
+> *Ejecutar estos comandos dentro de la carpeta Muichiro-MD*
 ```bash
 termux-wake-lock && npm i -g pm2 && pm2 start index.js && pm2 save && pm2 logs 
 ``` 
@@ -100,7 +100,7 @@ cd && cd YukiBot-MD && rm -rf sessions/Principal && npm run code
 </details>
 
 <details>
-<summary><b>❀ Actualizar YukiBot-MD</b></summary>
+<summary><b>❀ Actualizar Muichiro-MD</b></summary>
 
 > **Utiliza esta opción únicamente si deseas actualizar a la última versión de YukiBot. Hemos implementado un método ingenioso mediante comandos para realizar la actualización, pero ten en cuenta que al usarla se eliminarán todos los archivos de la versión actual y se reemplazarán con los de la nueva versión. Solo se conservará la base de datos, por lo que será necesario volver a vincular el Bot.**  
 
@@ -126,15 +126,15 @@ cd && cd YukiBot-MD && nano settings.js
 <details>
 <summary><b> 🜸 Enlaces Oficiales </b></summary>
 
- * Canal Oficial  [`¡Click aquí!`](https://whatsapp.com/channel/0029Vb64nWqLo4hb8cuxe23n)
-* Grupo Oficial [`¡Click aquí!`](https://chat.whatsapp.com/HaKf6ezcwdbGzmH782eBal)
-* Comunidad Oficial [`¡Click aquí!`](https://chat.whatsapp.com/BgIcqDiiTEmL5ChFpq76y0?mode=ems_copy_t)
+ * Canal Oficial  [`¡Click aquí!`](https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M)
+* Grupo Oficial [`¡Click aquí!`](https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt)
+* Comunidad Oficial [`¡Click aquí!`](https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt)
 </details>
 
 <details>
 <summary><b> ✰ Contáctos</b></summary>
 
-* WhatsApp: [`Aquí`](https://wa.me/522202410659)
+* WhatsApp: [`Aquí`](https://wa.me/573004828388)
 * Correo: [`Aquí`](thekingdestroy507@gmail.com)
 </details>
 
@@ -177,7 +177,7 @@ href="https://home.akirax.net"><img src="https://raw.githubusercontent.com/The-K
 
 ---
 
-### **`❀ Colaboradores`**
+### **`❀ Creditos`**
 <a href="https://github.com/The-King-Destroy/Yuki_Suou-Bot/graphs/contributors">
 <img src="https://contrib.rocks/image?repo=The-King-Destroy/Yuki_Suou-Bot" /> 
 </a>
