@@ -25,14 +25,14 @@ Extensiones adicionales
 
 ---
 
-### **`✧ Click en la imagen para descargar termux ✧`**
+### **`˚.📩⋆ Click en la imagen para descargar termux ✧`**
 <a
 href="https://f-droid.org/es/packages/com.termux/"><img src="https://qu.ax/finc.jpg" height="125px"></a> 
 
 > ˚.💻⋆*No descargues las apk que lleven nombre de* ***`beta`***, *se recomiendan que sean apk confiables, ya que la tienda de play store no se actualiza consecutivamente, recuerda otorgarle los permisos necesarios para la instalacion.*
 ### **`☝️ Instalación por termux`**
 <details>
-<summary><b>✰ Instalación Manual</b></summary>
+<summary><b>🖥️ Instalación. Manual</b></summary>
 
 > *Comandos para instalar de forma manual*
 ```bash
@@ -42,7 +42,7 @@ termux-setup-storage
 apt update && apt upgrade && pkg install -y git nodejs ffmpeg imagemagick yarn
 ```
 ```bash
-git clone https://github.com/The-King-Destroy/YukiBot-MD && cd YukiBot-MD
+git clone https://github.com/bakukats07/Tokito-muichiro-bot && cd Muichiro-MD
 ```
 ```bash
 yarn install
@@ -57,7 +57,7 @@ npm start
 </details>
 
 <details>
-  <summary><b>🜸 Comandos para mantener más tiempo activo el Bot</b></summary>
+  <summary><b>🔜 Comandos para mantener más tiempo activo el Bot</b></summary>
 
 > *Ejecutar estos comandos dentro de la carpeta Muichiro-MD*
 ```bash
@@ -84,28 +84,28 @@ pm2 start index
 ### En caso de detenerse
 > _Si despues que ya instalastes el bot y termux te salta en blanco, se fue tu internet o reiniciaste tu celular, solo realizaras estos pasos:_
 ```bash
-cd && cd YukiBot-MD && npm start
+cd && cd Muichiro-MD && npm start
 ```
 ----
 ### Obtener nuevo código QR 
-> *Detén el bot, haz click en el símbolo (ctrl) [default=z] usar la letra "z" + "ENTER" hasta que salga algo verdes similar a: `YukiBot-MD $`*
+> *Detén el bot, haz click en el símbolo (ctrl) [default=z] usar la letra "z" + "ENTER" hasta que salga algo verdes similar a: `~Muichiro-MD $`*
 > **Escribe los siguientes comandos uno x uno :**
 ```bash 
-cd && cd YukiBot-MD && rm -rf sessions/Principal && npm run qr
+cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run qr
 ```
 ----
 ### Obtener nuevo código de teléfono 
 ```bash 
-cd && cd YukiBot-MD && rm -rf sessions/Principal && npm run code
+cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run code
 ```
 </details>
 
 <details>
-<summary><b>❀ Actualizar Muichiro-MD</b></summary>
+<summary><b>🕒 Actualizar Muichiro-MD</b></summary>
 
-> **Utiliza esta opción únicamente si deseas actualizar a la última versión de YukiBot. Hemos implementado un método ingenioso mediante comandos para realizar la actualización, pero ten en cuenta que al usarla se eliminarán todos los archivos de la versión actual y se reemplazarán con los de la nueva versión. Solo se conservará la base de datos, por lo que será necesario volver a vincular el Bot.**  
+> **Utiliza esta opción únicamente si deseas actualizar a la última versión de Muichiro-MD. Hemos implementado un método ingenioso mediante comandos para realizar la actualización, pero ten en cuenta que al usarla se eliminarán todos los archivos de la versión actual y se reemplazarán con los de la nueva versión. Solo se conservará la base de datos, por lo que será necesario volver a vincular el Bot.**  
 
-**Comandos para actualizar YukiBot-MD de forma automática**
+**Comandos para actualizar Muichiro-MD de forma automática**
 
 ```bash
 grep -q 'bash\|wget' <(dpkg -l) || apt install -y bash wget && wget -O - https://raw.githubusercontent.com/DevAlexJs/SakuraBot-MD/master/termux.sh | bash 
@@ -115,9 +115,9 @@ grep -q 'bash\|wget' <(dpkg -l) || apt install -y bash wget && wget -O - https:/
 *Si después de instalar el bot e iniciar la sesión (deseas poner tu número es la lista de owner pon este comando:*
 
 ```bash
-cd && cd YukiBot-MD && nano settings.js
+cd && cd Muichiro-MD && nano settings.js
 ```
-#### Para que no pierda su progreso en YukiBot, estos comandos realizarán un respaldo de su `database.json` y se agregará a la versión más reciente.
+#### Para que no pierda su progreso en Muichiro-MD, estos comandos realizarán un respaldo de su `database.json` y se agregará a la versión más reciente.
 > *Estos comandos solo funcionan para TERMUX, REPLIT, LINUX*
 </details>
 
@@ -127,13 +127,13 @@ cd && cd YukiBot-MD && nano settings.js
 <details>
 <summary><b> 🜸 Enlaces Oficiales </b></summary>
 
- * Canal Oficial  [`¡Click aquí!`](https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M)
-* Grupo Oficial [`¡Click aquí!`](https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt)
-* Comunidad Oficial [`¡Click aquí!`](https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt)
+ * Canal Oficial  [`pulsa aqui🥺`](https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M)
+* Grupo Oficial [`oprimeme😖`](https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt)
+* Comunidad Oficial [`no muerdo😣`](https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt)
 </details>
 
 <details>
-<summary><b> ✰ Contáctos</b></summary>
+<summary><b> 📞 Contáctos</b></summary>
 
 * WhatsApp: [`Aquí`](https://wa.me/573004828388)
 * Correo: [`Aquí`](thekingdestroy507@gmail.com)
@@ -148,7 +148,7 @@ cd && cd YukiBot-MD && nano settings.js
 </a>
 
 <details>
- <summary><b> ❒ Servidor BoxMineWorld</b></summary>
+ <summary><b> 📶 Servidor BoxMineWorld</b></summary>
 
 * Pagina Oficial: [`Boxmineworld`](https://boxmineworld.com)
 * Tutorial - Crear cuenta en la Dashboard: [`Dashboard`](https://www.youtube.com/watch?v=ZAwBLuNmIlI)
@@ -167,7 +167,7 @@ cd && cd YukiBot-MD && nano settings.js
 href="https://home.akirax.net"><img src="https://raw.githubusercontent.com/The-King-Destroy/Adiciones/main/Contenido/1748713078525.jpeg" height="125px"></a>
 
 <details>
-<summary><b> ❒ Servidor Akirax</b></summary>
+<summary><b> 🔌 Servidor Akirax</b></summary>
 
 * Dashboard : [`Dash`](https://home.akirax.net)
 * Panel : [`Panel`](https://console.akirax.net)
