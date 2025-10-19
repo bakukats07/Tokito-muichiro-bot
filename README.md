@@ -177,12 +177,12 @@ href="https://home.akirax.net"><img src="https://raw.githubusercontent.com/The-K
 
 ---
 
-### **`❀ Creditos`**
+### **`୧⍤⃝🐻Creditos`**
 <a href="https://github.com/The-King-Destroy">
-<img src="https://github.com/The-King-Destroy" /> 
+<img src="https://github.com/The-King-Destroy.png" width="130"alt=King-The-Destroy/> 
 </a>
 
-### **`ᥫ᭡ Propietario`**
+### **`୧⍤⃝⛩️ Propietario`**
 <a
 href="https://github.com/bakukats07"><img src="https://github.com/bakukats07.png" width="130" height="130" alt="toki_mui7798
 "/></a>
