@@ -470,7 +470,7 @@ const textoMenu = `
 ✦ #xnxx •#xnxxdl + [Link]
 ⸙ Descargar un video Xnxx.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ   _💙 ${creador}_   SkyCloud
-
+`
 
 
 // 🖼️ Enviar el menú con banner + icono
