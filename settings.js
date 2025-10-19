@@ -21,16 +21,16 @@ global.prems = []
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.libreria = "Baileys Multi Device"
-global.vs = "^1.8.2|Latest"
-global.nameqr = "Tokito-muichiro-bot"
+global.vs = "1.0.0"
+global.nameqr = "Muichiro-MD"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
 global.yukiJadibts = true
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
-global.botname = "tokito Muichiro"
-global.textbot = "ᥡᥙkі, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud"
+global.botname = "Muichiro-MD"
+global.textbot = "Muichiro, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud"
 global.dev = "© ⍴᥆ᥕᥱrᥱძ ᑲᥡ skycloud"
 global.author = "© mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud"
 global.etiqueta = "Skycloud"
