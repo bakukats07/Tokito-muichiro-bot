@@ -479,21 +479,18 @@ const textoMenu = `
 // 🖼️ Enviar el menú con banner + icono
 
 await conn.sendMessage(m.chat, {
-      image: { url: banner },
-      caption: `${textoMenu.trim()}\n\n💮 ${botname} | ${creador}`,
-      mentions: [m.sender],
-      footer: `💮 ${botname} | ${creador}`,
-      contextInfo: {
-        externalAdReply: {
-          title: `${botname} - Menú Principal`,
-          body: `Versión ${version} | ${libreria}`,
-          thumbnail: await (await fetch(icono)).buffer(),
-          sourceUrl: canal,
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+  text: '', // 👈 sin texto visible
+  contextInfo: {
+    externalAdReply: {
+      title: `${botname} - Menú Principal`,
+      body: `Versión ${version} | ${libreria}`,
+      thumbnail: await (await fetch(icono)).buffer(),
+      mediaType: 1,
+      renderLargerThumbnail: true,
+      sourceUrl: canal // 👈 muestra el enlace debajo
+    }
+  }
+}, { quoted: m })
 
   } catch (err) {
     console.error(err)
