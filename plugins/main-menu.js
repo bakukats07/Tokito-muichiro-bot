@@ -492,7 +492,7 @@ await conn.sendMessage(m.chat, {
       body: 'made in Skycloud',
       thumbnail: await (await
 fetch(icono)).buffer(), 
-      sourceUrl: channel, 
+      sourceUrl: canal, 
       mediaType: 1,
       renderLargerThumbnail: true
     }
