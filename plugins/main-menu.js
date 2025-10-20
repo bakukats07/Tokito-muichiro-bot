@@ -479,12 +479,12 @@ const textoMenu = `
 // 🖼️ Enviar el menú con banner + icono
 
 await conn.sendMessage(m.chat, {
-  text: '', // 👈 sin texto visible
+  text: 'textoMenu', // 👈 sin texto visible
   contextInfo: {
     externalAdReply: {
       title: `${botname} - Menú Principal`,
       body: `Versión ${version} | ${libreria}`,
-      thumbnail: await (await fetch(icono)).buffer(),
+      thumbnail: await (await fetch(banner)).buffer(),
       mediaType: 1,
       renderLargerThumbnail: true,
       sourceUrl: canal // 👈 muestra el enlace debajo
