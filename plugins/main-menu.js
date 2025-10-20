@@ -1,10 +1,10 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
-try {
-const userId = m.sender
-const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
-const totalCommands = Object.keys(global.plugins || {}).length || 0
+  try {
+   const userId = m.sender
+   const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
+   const totalCommands = Object.keys(global.plugins || {}).length || 0
 
 // 🧠 Variables globales desde settings.js
 
