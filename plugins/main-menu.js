@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn, usedPrefix }) => {
+let handler = async (m, { con, usedPrefix }) => {
   try {
    const userId = m.sender
    const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
