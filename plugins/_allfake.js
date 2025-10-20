@@ -19,10 +19,9 @@ global.mes = d.toLocaleDateString('es', {month: 'long'})
 global.año = d.toLocaleDateString('es', {year: 'numeric'})
 global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true})
 
-var canal = 'https://whatsapp.com/channel/0029VbAfPu9BqbrEMFWXKE0d'  
-var comunidad = 'https://chat.whatsapp.com/I0dMp2fEle7L6RaWBmwlAa'
-var git = 'https://github.com/The-King-Destroy'
-var github = 'https://github.com/The-King-Destroy/Yuki_Suou-Bot' 
+var canal = 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'  
+var comunidad = 'https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt'
+var git = 'https://github.com/bakukats07 = 'https://github.com/bakukats07/Tokito-muichiro-bot' 
 var correo = 'thekingdestroy507@gmail.com'
 global.redes = [canal, comunidad, git, github, correo].getRandom()
 
