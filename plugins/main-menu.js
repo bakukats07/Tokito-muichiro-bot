@@ -478,7 +478,7 @@ const textoMenu = `
 
 await conn.sendPresenceUpdate('composing', m.chat)
 await conn.sendMessage(m.chat, {
-  video: { url: banner }, // Video de banner desde settings.js
+  image: { url: banner }, // imagen de banner desde settings.js
   mimetype: 'video/mp4', 
   fileName: 'menú.mp4',
   caption: textoMenu,
@@ -493,7 +493,7 @@ await conn.sendMessage(m.chat, {
       thumbnail: await (await
 fetch(icono)).buffer(), 
       sourceUrl: canal, 
-      mediaType: 1,
+      mediaType: 2,
       renderLargerThumbnail: true
     }
   }
