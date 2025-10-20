@@ -16,6 +16,7 @@ const textbot = global.textbot || ''
 const redes = global.github || 'https://github.com/bakukats07'
 const banner = global.banner ||'https://github.com/bakukats07/Mis-Imagenes/raw/refs/heads/main/PinDown.io_@ruyukitt_1760899279.mp4'
 const icono = global.icono || 'https://telegra.ph/file/default-icon.jpg'
+const canal = global.canal || 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M' 
 
 // 🧾 Texto del menú  
 const textoMenu = `
@@ -482,7 +483,16 @@ await conn.sendMessage(m.chat, {
   fileName: 'menú.mp4',
   caption: textoMenu,
   mentions: [m.sender], 
-  contextInfo: {
+  footer: 'Canal oficial del bot',
+      buttons: [
+        {
+          buttonId: 'open_channel', // Id interno, no importa
+          buttonText: { displayText: '📲 Entrar o ver canal' },
+          type: 1
+        }
+      ],
+      headerType: 5, 
+   contextInfo: {
     externalAdReply: {
       title: botname,
       body: textbot,
