@@ -1,4 +1,4 @@
-import { watchFile, unwatchFile } from 'fs'
+miimport { watchFile, unwatchFile } from 'fs'
 import chalk from 'chalk'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -30,10 +30,10 @@ global.yukiJadibts = true
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.botname = 'Ⓜ︎𝒖𝒊𝒄𝒉𝒊𝒓𝒐-𝑴𝑫'
-global.textbot = 'Ꮇ𝒖𝒊𝒄𝒉𝒊𝒓𝒐, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud' 
-global.dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ skycloud'
-global.author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud'
-global.etiqueta = 'Skycloud'
+global.textbot = 'Ꮇ𝒖𝒊𝒄𝒉𝒊𝒓𝒐, mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드' 
+global.dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ 스카이클라우드'
+global.author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드'
+global.etiqueta = '스카이클라우드'
 global.currency = '¥enes'
 global.banner = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/c6c24dc91a5befb5e6a58e23163ce5f4.jpg'
 global.icono = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/f9d15a813993931a4e484f5176da4348.jpg'
