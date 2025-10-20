@@ -484,14 +484,8 @@ await conn.sendMessage(m.chat, {
   caption: textoMenu,
   mentions: [m.sender], 
   footer: 'Canal oficial del bot',
-      buttons: [
-        {
-          buttonId: 'open_channel', // Id interno, no importa
-          buttonText: { displayText: '📲 Ver canal' },
-          type: 1
-        }
-      ],
-      headerType: 5, 
+      
+      headerType: 4, 
    contextInfo: {
     externalAdReply: {
       title: botname,
