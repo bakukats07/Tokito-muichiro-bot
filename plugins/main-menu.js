@@ -477,7 +477,7 @@ const textoMenu = `
 // 🖼️ Enviar el menú con banner + icono
 
 await conn.sendMessage(m.chat, {
-  image: { url: banner }, // Imagen de banner desde settings.js
+  video: { url: banner }, // Video de banner desde settings.js
   caption: textoMenu,
   mentions: [m.sender], 
   contextInfo: {
