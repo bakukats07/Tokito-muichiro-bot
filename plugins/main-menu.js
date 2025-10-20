@@ -483,7 +483,7 @@ await conn.sendMessage(m.chat, {
   fileName: 'menú.mp4',
   caption: textoMenu,
   mentions: [m.sender], 
-  footer: 'Canal oficial del bot',
+  footer: 'Apenas en proceso, paciencia⚙️',
       
       headerType: 4, 
    contextInfo: {
