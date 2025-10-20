@@ -98,17 +98,17 @@ const textoMenu = `
 ✦ #facebook • #fb + [Link]
 > ⸙ Descargar un video de Facebook.
 ✦ #twitter • #x + [Link]
-⸙ Descargar un video de Twitter/X.
+> ⸙ Descargar un video de Twitter/X.
 ✦ #ig • #instagram + [Link]
-⸙ Descargar un reel de Instagram.
+> ⸙ Descargar un reel de Instagram.
 ✦ #pinterest • #pin + [busqueda] / [Link]
-⸙ Buscar y descargar imagenes de Pinterest.
+> ⸙ Buscar y descargar imagenes de Pinterest.
 ✦ #image • #imagen + [busqueda]
-⸙ Buscar y descargar imagenes de Google.
+> ⸙ Buscar y descargar imagenes de Google.
 ✦ #apk • #modapk + [busqueda]
-⸙ Descargar un apk de Aptoide.
+> ⸙ Descargar un apk de Aptoide.
 ✦ #ytsearch • #search + [busqueda]
-⸙ Buscar videos de YouTube.
+> ⸙ Buscar videos de YouTube.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -117,49 +117,49 @@ const textoMenu = `
 
 > ✿ Comandos de Gacha para reclamar y colecciónar personajes.
 ✦ #buycharacter • #buychar • #buyc + [nombre]
-⸙ Comprar un personaje en venta.
+> ⸙ Comprar un personaje en venta.
 ✦ #charimage • #waifuimage • #cimage • #wimage + [nombre]
-⸙ Ver una imagen aleatoria de un personaje.
+> ⸙ Ver una imagen aleatoria de un personaje.
 ✦ #charinfo • #winfo • #waifuinfo + [nombre]
-⸙ Ver información de un personaje.
+> ⸙ Ver información de un personaje.
 ✦ #claim • #c • #reclamar + {citar personaje}
-⸙ Reclamar un personaje.
+> ⸙ Reclamar un personaje.
 ✦ #delclaimmsg
-⸙ Restablecer el mensaje al reclamar un personaje
+> ⸙ Restablecer el mensaje al reclamar un personaje
 ✦ #deletewaifu • #delwaifu • #delchar + [nombre]
-⸙ Eliminar un personaje reclamado.
+> ⸙ Eliminar un personaje reclamado.
 ✦ #favoritetop • #favtop
-⸙ Ver el top de personajes favoritos.
+> ⸙ Ver el top de personajes favoritos.
 ✦ #gachainfo • #ginfo • #infogacha
-⸙ Ver tu información de gacha.
+> ⸙ Ver tu información de gacha.
 ✦ #giveallharem + [@usuario]
-⸙ Regalar todos tus personajes a otro usuario.
+> ⸙ Regalar todos tus personajes a otro usuario.
 ✦ #givechar • #givewaifu • #regalar + [@usuario] [nombre]
-⸙ Regalar un personaje a otro usuario.
+> ⸙ Regalar un personaje a otro usuario.
 ✦ #robwaifu • #robarwaifu + [@usuario]
-⸙ Robar un personaje a otro usuario.
+> ⸙ Robar un personaje a otro usuario.
 ✦ #harem • #waifus • #claims + <@usuario>
-⸙ Ver tus personajes reclamados.
+> ⸙ Ver tus personajes reclamados.
 ✦ #haremshop • #tiendawaifus • #wshop + <Pagina>
-⸙ Ver los personajes en venta.
+> ⸙ Ver los personajes en venta.
 ✦ #removesale • #removerventa + [precio] [nombre]
-⸙ Eliminar un personaje en venta.
+> ⸙ Eliminar un personaje en venta.
 ✦ #rollwaifu • #rw • #roll
-⸙ Waifu o husbando aleatorio
+> ⸙ Waifu o husbando aleatorio
 ✦ #sell • #vender + [precio] [nombre]
-⸙ Poner un personaje a la venta.
+> ⸙ Poner un personaje a la venta.
 ✦ #serieinfo • #ainfo • #animeinfo + [nombre]
-⸙ Información de un anime.
+> ⸙ Información de un anime.
 ✦ #serielist • #slist • #animelist
-⸙ Listar series del bot
+> ⸙ Listar series del bot
 ✦ #setclaimmsg • #setclaim + [mensaje]
-⸙ Modificar el mensaje al reclamar un personaje
+> ⸙ Modificar el mensaje al reclamar un personaje
 ✦ #trade • #intercambiar + [Tu personaje] / [Personaje 2]
-⸙ Intercambiar un personaje con otro usuario
+> ⸙ Intercambiar un personaje con otro usuario
 ✦ #vote • #votar + [nombre]
-⸙ Votar por un personaje para subir su valor.
+> ⸙ Votar por un personaje para subir su valor.
 ✦ #waifusboard • #waifustop • #topwaifus • #wtop + [número]
-⸙ Ver el top de personajes con mayor valor.
+> ⸙ Ver el top de personajes con mayor valor.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -168,25 +168,25 @@ const textoMenu = `
 
 > ✿ Comandos para registrar tu propio Bot.
 ✦ #qr • #code
-⸙ Crear un Sub-Bot con un codigo QR/Code
+> ⸙ Crear un Sub-Bot con un codigo QR/Code
 ✦ #bots • #botlist
-⸙ Ver el numero de bots activos.
+> ⸙ Ver el numero de bots activos.
 ✦ #status • #estado
-⸙ Ver estado del bot.
+> ⸙ Ver estado del bot.
 ✦ #p • #ping
-⸙ Medir tiempo de respuesta.
+> ⸙ Medir tiempo de respuesta.
 ✦ #join + [Invitacion]
-⸙ Unir al bot a un grupo.
+> ⸙ Unir al bot a un grupo.
 ✦ #leave • #salir
-⸙ Salir de un grupo.
+> ⸙ Salir de un grupo.
 ✦ #logout
-⸙ Cerrar sesion del bot.
+> ⸙ Cerrar sesion del bot.
 ✦ #setpfp • #setimage
-⸙ Cambiar la imagen de perfil
+> ⸙ Cambiar la imagen de perfil
 ✦ #setstatus + [estado]
-⸙ Cambiar el estado del bot
+> ⸙ Cambiar el estado del bot
 ✦ #setusername + [nombre]
-⸙ Cambiar el nombre de usuario
+> ⸙ Cambiar el nombre de usuario
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -195,53 +195,53 @@ const textoMenu = `
 
 > ✿ Comandos de Útilidades.
 ✦ #help • #menu
-⸙ Ver el menú de comandos.
+> ⸙ Ver el menú de comandos.
 ✦ #sc • #script
-⸙ Link del repositorio oficial del Bot.
+> ⸙ Link del repositorio oficial del Bot.
 ✦ #sug • #suggest
-⸙ Sugerir nuevas funciones al desarrollador.
+> ⸙ Sugerir nuevas funciones al desarrollador.
 ✦ #reporte • #reportar
-⸙ Reportar fallas o problemas del bot.
+> ⸙ Reportar fallas o problemas del bot.
 ✦ #calcular • #cal
-⸙ Calcular tipos de ecuaciones.
+> ⸙ Calcular tipos de ecuaciones.
 ✦ #delmeta
-⸙ Restablecer el pack y autor por defecto para tus stickers.
+> ⸙ Restablecer el pack y autor por defecto para tus stickers.
 ✦ #getpic • #pfp + [@usuario]
-⸙ Ver la foto de perfil de un usuario.
+> ⸙ Ver la foto de perfil de un usuario.
 ✦ #say + [texto]
-⸙ Repetir un mensaje
+> ⸙ Repetir un mensaje
 ✦ #setmeta + [autor] | [pack]
-⸙ Establecer el pack y autor por defecto para tus stickers.
+> ⸙ Establecer el pack y autor por defecto para tus stickers.
 ✦ #sticker • #s • #wm + {citar una imagen/video}
-⸙ Convertir una imagen/video a sticker
+> ⸙ Convertir una imagen/video a sticker
 ✦ #toimg • #img + {citar sticker}
-⸙ Convertir un sticker/imagen de una vista a imagen.
+> ⸙ Convertir un sticker/imagen de una vista a imagen.
 ✦ #brat • #bratv • #qc • #emojimix︎
-⸙ Crear stickers con texto.
+> ⸙ Crear stickers con texto.
 ✦ #gitclone + [Link]
-⸙ Descargar un repositorio de Github.
+> ⸙ Descargar un repositorio de Github.
 ✦ #enhance • #remini • #hd
-⸙ Mejorar calidad de una imagen.
+> ⸙ Mejorar calidad de una imagen.
 ✦ #letra • #style
-⸙ Cambia la fuente de las letras.
+> ⸙ Cambia la fuente de las letras.
 ✦ #read • #readviewonce
-⸙ Ver imágenes viewonce.
+> ⸙ Ver imágenes viewonce.
 ✦ #ss • #ssweb
-⸙ Ver el estado de una página web.
+> ⸙ Ver el estado de una página web.
 ✦ #translate • #traducir • #trad
-⸙ Traducir palabras en otros idiomas.
+> ⸙ Traducir palabras en otros idiomas.
 ✦ #ia • #gemini
-⸙ Preguntar a Chatgpt.
+> ⸙ Preguntar a Chatgpt.
 ✦ #tourl • #catbox
-⸙ Convertidor de imágen/video en urls.
+> ⸙ Convertidor de imágen/video en urls.
 ✦ #wiki • #wikipedia
-⸙ Investigar temas a través de Wikipedia.
+> ⸙ Investigar temas a través de Wikipedia.
 ✦ #dalle • #flux
-⸙ Crear imágenes con texto mediante IA.
+> ⸙ Crear imágenes con texto mediante IA.
 ✦ #npmdl • #nmpjs
-⸙ Descargar paquetes de NPMJS.
+> ⸙ Descargar paquetes de NPMJS.
 ✦ #google
-⸙ Realizar búsquedas por Google.
+> ⸙ Realizar búsquedas por Google.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -250,31 +250,31 @@ const textoMenu = `
 
 > ✿ Comandos de Perfil para ver y configurar tu perfil.
 ✦ #leaderboard • #lboard • #top + <Paginá>
-⸙ Top de usuarios con más experiencia.
+> ⸙ Top de usuarios con más experiencia.
 ✦ #level • #lvl + <@Mencion>
-⸙ Ver tu nivel y experiencia actual.
+> ⸙ Ver tu nivel y experiencia actual.
 ✦ #marry • #casarse + <@Mencion>
-⸙ Casarte con alguien.
+> ⸙ Casarte con alguien.
 ✦ #profile + <@Mencion>
-⸙ Ver tu perfil.
+> ⸙ Ver tu perfil.
 ✦ #setbirth + [fecha]
-⸙ Establecer tu fecha de cumpleaños.
+> ⸙ Establecer tu fecha de cumpleaños.
 ✦ #setdescription • #setdesc + [Descripcion]
-⸙ Establecer tu descripcion.
+> ⸙ Establecer tu descripcion.
 ✦ #setgenre + Hombre | Mujer
-⸙ Establecer tu genero.
+> ⸙ Establecer tu genero.
 ✦ #delgenre • #delgenero
-⸙ Eliminar tu género.
+> ⸙ Eliminar tu género.
 ✦ #delbirth + [fecha]
-⸙ Borrar tu fecha de cumpleaños.
+> ⸙ Borrar tu fecha de cumpleaños.
 ✦ #divorce
-⸙ Divorciarte de tu pareja.
+> ⸙ Divorciarte de tu pareja.
 ✦ #setfavourite • #setfav + [Personaje]
-⸙ Establecer tu claim favorito.
+> ⸙ Establecer tu claim favorito.
 ✦ #deldescription • #deldesc
-⸙ Eliminar tu descripción.
+> ⸙ Eliminar tu descripción.
 ✦ #prem • #vip
-⸙ Comprar membresía premium.
+> ⸙ Comprar membresía premium.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -283,69 +283,69 @@ const textoMenu = `
 
 > ✿ Comandos para Administradores de grupos.
 ✦ #tag • #hidetag • #invocar • #tagall + [mensaje]
-⸙ Envía un mensaje mencionando a todos los usuarios del grupo.
+> ⸙ Envía un mensaje mencionando a todos los usuarios del grupo.
 ✦ #detect • #alertas + [enable/disable]
-⸙ Activar/desactivar las alertas de promote/demote
+> ⸙ Activar/desactivar las alertas de promote/demote
 ✦ #antilink • #antienlace + [enable/disable]
-⸙ Activar/desactivar el antienlace
+> ⸙ Activar/desactivar el antienlace
 ✦ #bot + [enable/disable]
-⸙ Activar/desactivar al bot
+> ⸙ Activar/desactivar al bot
 ✦ #close • #cerrar
-⸙ Cerrar el grupo para que solo los administradores puedan enviar mensajes.
+> ⸙ Cerrar el grupo para que solo los administradores puedan enviar mensajes.
 ✦ #demote + <@usuario> | {mencion}
-⸙ Descender a un usuario de administrador.
+> ⸙ Descender a un usuario de administrador.
 ✦ #economy + [enable/disable]
-⸙ Activar/desactivar los comandos de economía
+> ⸙ Activar/desactivar los comandos de economía
 ✦ #gacha + [enable/disable]
-⸙ Activar/desactivar los comandos de Gacha y Games.
+> ⸙ Activar/desactivar los comandos de Gacha y Games.
 ✦ #welcome • #bienvenida + [enable/disable]
-⸙ Activar/desactivar la bienvenida y despedida.
+> ⸙ Activar/desactivar la bienvenida y despedida.
 ✦ #setbye + [texto]
-⸙ Establecer un mensaje de despedida personalizado.
+> ⸙ Establecer un mensaje de despedida personalizado.
 ✦ #setprimary + [@bot]
-⸙ Establece un bot como primario del grupo.
+> ⸙ Establece un bot como primario del grupo.
 ✦ #setwelcome + [texto]
-⸙ Establecer un mensaje de bienvenida personalizado.
+> ⸙ Establecer un mensaje de bienvenida personalizado.
 ✦ #kick + <@usuario> | {mencion}
-⸙ Expulsar a un usuario del grupo.
+> ⸙ Expulsar a un usuario del grupo.
 ✦ #nsfw + [enable/disable]
-⸙ Activar/desactivar los comandos NSFW
+> ⸙ Activar/desactivar los comandos NSFW
 ✦ #onlyadmin + [enable/disable]
-⸙ Permitir que solo los administradores puedan utilizar los comandos.
+> ⸙ Permitir que solo los administradores puedan utilizar los comandos.
 ✦ #open • #abrir
-⸙ Abrir el grupo para que todos los usuarios puedan enviar mensajes.
+> ⸙ Abrir el grupo para que todos los usuarios puedan enviar mensajes.
 ✦ #promote + <@usuario> | {mencion}
-⸙ Ascender a un usuario a administrador.
+> ⸙ Ascender a un usuario a administrador.
 ✦ #add • #añadir • #agregar + {número}
-⸙ Invita a un usuario a tu grupo.
+> ⸙ Invita a un usuario a tu grupo.
 ✦ admins • admin + [texto]
-⸙ Mencionar a los admins para solicitar ayuda.
+> ⸙ Mencionar a los admins para solicitar ayuda.
 ✦ #restablecer • #revoke
-⸙ Restablecer enlace del grupo.
+> ⸙ Restablecer enlace del grupo.
 ✦ #addwarn • #warn + <@usuario> | {mencion}
-⸙ Advertir aún usuario.
+> ⸙ Advertir aún usuario.
 ✦ #unwarn • #delwarn + <@usuario> | {mencion}
-⸙ Quitar advertencias de un usuario.
+> ⸙ Quitar advertencias de un usuario.
 ✦ #advlist • #listadv
-⸙ Ver lista de usuarios advertidos.
+> ⸙ Ver lista de usuarios advertidos.
 ✦ #inactivos • #kickinactivos
-⸙ Ver y eliminar a usuarios inactivos.
+> ⸙ Ver y eliminar a usuarios inactivos.
 ✦ #listnum • #kicknum [texto]
-⸙ Eliminar usuarios con prefijo de país.
+> ⸙ Eliminar usuarios con prefijo de país.
 ✦ #gpbanner • #groupimg
-⸙ Cambiar la imagen del grupo.
+> ⸙ Cambiar la imagen del grupo.
 ✦ #gpname • #groupname [texto]
-⸙ Cambiar la nombre del grupo.
+> ⸙ Cambiar la nombre del grupo.
 ✦ #gpdesc • #groupdesc [texto]
-⸙ Cambiar la descripción del grupo.
+> ⸙ Cambiar la descripción del grupo.
 ✦ #del • #delete + {citar un mensaje}
-⸙ Eliminar un mensaje.
+> ⸙ Eliminar un mensaje.
 ✦ #linea • #listonline
-⸙ Ver lista de usuarios en linea.
+> ⸙ Ver lista de usuarios en linea.
 ✦ #gp • #infogrupo
-⸙ Ver la Informacion del grupo.
+> ⸙ Ver la Informacion del grupo.
 ✦ #link
-⸙ Ver enlace de invitación del grupo.
+> ⸙ Ver enlace de invitación del grupo.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅׅ
 
 
@@ -354,105 +354,105 @@ const textoMenu = `
 
 > ✿ Comandos de reacciones de anime.
 ✦ #angry • #enojado + <mencion>
-⸙ Estar enojado
+> ⸙ Estar enojado
 ✦ #bath • #bañarse + <mencion>
-⸙ Bañarse
+> ⸙ Bañarse
 ✦ #bite • #morder + <mencion>
-⸙ Muerde a alguien
+> ⸙ Muerde a alguien
 ✦ #bleh • #lengua + <mencion>
-⸙ Sacar la lengua
+> ⸙ Sacar la lengua
 ✦ #blush • #sonrojarse + <mencion>
-⸙ Sonrojarte
+> ⸙ Sonrojarte
 ✦ #bored • #aburrido + <mencion>
-⸙ Estar aburrido
+> ⸙ Estar aburrido
 ✦ #clap • #aplaudir + <mencion>
-⸙ Aplaudir
+> ⸙ Aplaudir
 ✦ #coffee • #cafe • #café + <mencion>
-⸙ Tomar café
+> ⸙ Tomar café
 ✦ #cry • #llorar + <mencion>
-⸙ Llorar por algo o alguien
+> ⸙ Llorar por algo o alguien
 ✦ #cuddle • #acurrucarse + <mencion>
-⸙ Acurrucarse
+> ⸙ Acurrucarse
 ✦ #dance • #bailar + <mencion>
-⸙ Sacate los pasitos prohíbidos
+> ⸙ Sacate los pasitos prohíbidos
 ✦ #dramatic • #drama + <mencion>
-⸙ Drama
+> ⸙ Drama
 ✦ #drunk • #borracho + <mencion>
-⸙ Estar borracho
+> ⸙ Estar borracho
 ✦ #eat • #comer + <mencion>
-⸙ Comer algo delicioso
+> ⸙ Comer algo delicioso
 ✦ #facepalm • #palmada + <mencion>
-⸙ Darte una palmada en la cara
+> ⸙ Darte una palmada en la cara
 ✦ #happy • #feliz + <mencion>
-⸙ Salta de felicidad
+> ⸙ Salta de felicidad
 ✦ #hug • #abrazar + <mencion>
-⸙ Dar un abrazo
+> ⸙ Dar un abrazo
 ✦ #impregnate • #preg • #preñar • #embarazar + <mencion>
-⸙ Embarazar a alguien
+> ⸙ Embarazar a alguien
 ✦ #kill • #matar + <mencion>
-⸙ Toma tu arma y mata a alguien
+> ⸙ Toma tu arma y mata a alguien
 ✦ #kiss • #muak + <mencion>
-⸙ Dar un beso
+> ⸙ Dar un beso
 ✦ #kisscheek • #beso + <mencion>
-⸙ Beso en la mejilla
+> ⸙ Beso en la mejilla
 ✦ #laugh • #reirse + <mencion>
-⸙ Reírte de algo o alguien
+> ⸙ Reírte de algo o alguien
 ✦ #lick • #lamer + <mencion>
-⸙ Lamer a alguien
+> ⸙ Lamer a alguien
 ✦ #love • #amor • #enamorado • #enamorada + <mencion>
-⸙ Sentirse enamorado
+> ⸙ Sentirse enamorado
 ✦ #pat • #palmadita • #palmada + <mencion>
-⸙ Acaricia a alguien
+> ⸙ Acaricia a alguien
 ✦ #poke • #picar + <mencion>
-⸙ Picar a alguien
+> ⸙ Picar a alguien
 ✦ #pout • #pucheros + <mencion>
-⸙ Hacer pucheros
+> ⸙ Hacer pucheros
 ✦ #punch • #pegar • #golpear + <mencion>
-⸙ Dar un puñetazo
+> ⸙ Dar un puñetazo
 ✦ #run • #correr + <mencion>
-⸙ Correr
+> ⸙ Correr
 ✦ #sad • #triste + <mencion>
-⸙ Expresar tristeza
+> ⸙ Expresar tristeza
 ✦ #scared • #asustado • #asustada + <mencion>
-⸙ Estar asustado
+> ⸙ Estar asustado
 ✦ #seduce • #seducir + <mencion>
-⸙ Seducir a alguien
+> ⸙ Seducir a alguien
 ✦ #shy • #timido • #timida + <mencion>
-⸙ Sentir timidez
+> ⸙ Sentir timidez
 ✦ #slap • #bofetada + <mencion>
-⸙ Dar una bofetada
+> ⸙ Dar una bofetada
 ✦ #sleep • #dormir + <mencion>
-⸙ Tumbarte a dormir
+> ⸙ Tumbarte a dormir
 ✦ #smoke • #fumar + <mencion>
-⸙ Fumar
+> ⸙ Fumar
 ✦ #spit • #escupir + <mencion>
-⸙ Escupir
+> ⸙ Escupir
 ✦ #step • #pisar + <mencion>
-⸙ Pisar a alguien
+> ⸙ Pisar a alguien
 ✦ #think • #pensar + <mencion>
-⸙ Pensar en algo
+> ⸙ Pensar en algo
 ✦ #walk • #caminar + <mencion>
-⸙ Caminar
+> ⸙ Caminar
 ✦ #wink • #guiñar + <mencion>
-⸙ Guiñar el ojo
+> ⸙ Guiñar el ojo
 ✦ #cringe • #avergonzarse + <mencion>
-⸙ Sentir vergüenza ajena
+> ⸙ Sentir vergüenza ajena
 ✦ #smug • #presumir + <mencion>
-⸙ Presumir con estilo
+> ⸙ Presumir con estilo
 ✦ #smile • #sonreir + <mencion>
-⸙ Sonreír con ternura
+> ⸙ Sonreír con ternura
 ✦ #highfive • #5 + <mencion>
-⸙ Chocar los cinco
+> ⸙ Chocar los cinco
 ✦ #bully • #bullying + <mencion>
-⸙ Molestar a alguien
+> ⸙ Molestar a alguien
 ✦ #handhold • #mano + <mencion>
-⸙ Tomarse de la mano
+> ⸙ Tomarse de la mano
 ✦ #wave • #ola • #hola + <mencion>
-⸙ Saludar con la mano
+> ⸙ Saludar con la mano
 ✦ #waifu
-⸙ Buscar una waifu aleatoria.
+> ⸙ Buscar una waifu aleatoria.
 ✦ #ppcouple • #ppcp
-⸙ Genera imágenes para amistades o parejas.
+> ⸙ Genera imágenes para amistades o parejas.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯
 
 
@@ -462,13 +462,13 @@ const textoMenu = `
 
 > ⸙ Buscar imagenes en Danbooru
 ✦ #gelbooru • #gbooru + [Tags]
-⸙ Buscar imagenes en Gelbooru
+> ⸙ Buscar imagenes en Gelbooru
 ✦ #rule34 • #r34 + [Tags]
-⸙ Buscar imagenes en Rule34
+> ⸙ Buscar imagenes en Rule34
 ✦ #xvideos •#xvideosdl + [Link]
-⸙ Descargar un video Xvideos.
+> ⸙ Descargar un video Xvideos.
 ✦ #xnxx •#xnxxdl + [Link]
-⸙ Descargar un video Xnxx.
+> ⸙ Descargar un video Xnxx.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ   _💙 ${creador}_   SkyCloud
 `
 
