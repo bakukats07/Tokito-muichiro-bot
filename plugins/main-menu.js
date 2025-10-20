@@ -476,7 +476,7 @@ const textoMenu = `
 
 // 🖼️ Enviar el menú con banner + icono
 
-await conn.sendMessage(m.chat, {
+await conn.sendMessage('composing', m.chat) {
   video: { url: banner }, // Video de banner desde settings.js
   mimetype: 'video/mp4', 
   fileName: 'menú.mp4', 
