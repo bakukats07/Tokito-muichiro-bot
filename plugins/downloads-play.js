@@ -118,13 +118,13 @@ async function sendAudio(conn, m, filePath, title) {
     mimetype: 'audio/ogg; codecs=opus',
     ptt: true
   }, { quoted: m })
-  await conn.reply(m.chat, `🌸 ¡Listo! He enviado la nota de voz de *${title}*`, m)
+  await conn.reply(m.chat, `🌸 ¡Listo! He enviado la nota de voz de *${title}* *MλÐɆ ƗN 스카이클라우드*`, m)
 }
 
 async function sendVideo(conn, m, filePath, title) {
   await conn.sendMessage(m.chat, {
     video: { url: filePath },
-    caption: `🎬 ${title}\n✨ ¡Listo! Aquí está tu video en 360p.`,
+    caption: `🎬 ${title}\n✨ ¡Listo! Aquí está tu video *MλÐɆ ƗN 스카이클라우드*.`,
   }, { quoted: m })
 }
 
