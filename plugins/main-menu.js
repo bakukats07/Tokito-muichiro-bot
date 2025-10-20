@@ -7,10 +7,10 @@ const totalCommands = Object.keys(global.plugins || {}).length || 0
 // 🧠 Variables globales desde settings.js
 
 const botname = global.botname || 'Muichiro Bot'
-const creador = global.etiqueta || 'By Skycloud'
+const creador = global.creador || 'By Skycloud'
 const version = global.vs || '1.0.0'
 const libreria = global.libreria || 'Baileys'
-const textbot = global.textbot || 'Tu asistente personal 🌸'
+const textbot = global.textbot || ''
 const redes = global.github || 'https://github.com/bakukats07'
 const banner = global.banner ||'https://github.com/bakukats07/Mis-Imagenes/raw/refs/heads/main/PinDown.io_@ruyukitt_1760899279.mp4'
 const icono = global.icono || 'https://telegra.ph/file/default-icon.jpg'
@@ -478,6 +478,8 @@ const textoMenu = `
 
 await conn.sendMessage(m.chat, {
   video: { url: banner }, // Video de banner desde settings.js
+  mimetype: 'video/mp4' 
+  fileName: 'menú.mp4'
   caption: textoMenu,
   mentions: [m.sender], 
   contextInfo: {
