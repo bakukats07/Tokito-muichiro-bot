@@ -487,7 +487,7 @@ await conn.sendMessage(m.chat, {
       buttons: [
         {
           buttonId: 'open_channel', // Id interno, no importa
-          buttonText: { displayText: '📲 Entrar o ver canal' },
+          buttonText: { displayText: '📲 Ver canal' },
           type: 1
         }
       ],
