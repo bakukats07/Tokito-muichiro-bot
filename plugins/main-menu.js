@@ -19,12 +19,9 @@ const icono = global.icono || 'https://telegra.ph/file/default-icon.jpg'
 
 // 🧾 Texto del menú  
 const textoMenu = `
-
 ︶•︶°︶•︶°︶•︶°︶•︶°︶•︶°︶
 
 > ❀ Hola! @${userId.split('@')[0]}, Soy ${botname}, Aquí tienes la lista de comandos.
-
-
 
 ╭┈ࠢ͜┅ࠦ͜͜╾݊͜─ؕ͜─ׄ͜─֬͜─֟͜─֫͜─ׄ͜─ؕ͜─݊͜┈ࠦ͜┅ࠡ͜͜┈࠭͜͜۰۰͜۰
 │✦ Tipo » ${(conn.user.jid == global.conn.user.jid ? 'Principal' : 'Sub-Bot')}
