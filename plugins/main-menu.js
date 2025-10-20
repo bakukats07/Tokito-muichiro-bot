@@ -476,9 +476,7 @@ const textoMenu = `
 
 // 🖼️ Enviar el menú con banner + icono
 
-await
-conn.sendMessage('composing',
-m.chat)
+await conn.sendPresenceUpdate('composing', m.chat)
 await conn.sendMessage(m.chat, {
   video: { url: banner }, // Video de banner desde settings.js
   mimetype: 'video/mp4', 
@@ -489,7 +487,8 @@ await conn.sendMessage(m.chat, {
     externalAdReply: {
       title: botname,
       body: textbot,
-      thumbnailUrl: icono,
+      thumbnailUrl: await (await
+fetch(icono)).buffer(), 
       sourceUrl: redes,
       mediaType: 1,
       renderLargerThumbnail: true
