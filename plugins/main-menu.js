@@ -12,7 +12,7 @@ const version = global.vs || '1.0.0'
 const libreria = global.libreria || 'Baileys'
 const textbot = global.textbot || 'Tu asistente personal 🌸'
 const redes = global.github || 'https://github.com/bakukats07'
-const banner = global.banner ||'https://github.com/bakukats07/Mis-Imagenes/raw/refs/heads/main/PinDown.io_@ruyukitt_1760899279.mp4''
+const banner = global.banner ||'https://github.com/bakukats07/Mis-Imagenes/raw/refs/heads/main/PinDown.io_@ruyukitt_1760899279.mp4'
 const icono = global.icono || 'https://telegra.ph/file/default-icon.jpg'
 
 // 🧾 Texto del menú  
