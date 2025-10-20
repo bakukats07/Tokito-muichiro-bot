@@ -35,7 +35,7 @@ global.dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ skycloud'
 global.author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud'
 global.etiqueta = 'Skycloud'
 global.currency = '¥enes'
-global.banner = 'https://github.com/bakukats07/Mis-Imagenes/raw/refs/heads/main/PinDown.io_@ruyukitt_1760899279.mp4'
+global.banner = 'https://github.com/bakukats07/Mis-Imagenes/blob/main/c6c24dc91a5befb5e6a58e23163ce5f4.jpg'
 global.icono = 'https://raw.githubusercontent.com/The-King-Destroy/Adiciones/main/Contenido/1742678797993.jpeg'
 global.catalogo = fs.readFileSync('./lib/catalogo.jpg')
 
