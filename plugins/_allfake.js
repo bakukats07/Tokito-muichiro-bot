@@ -23,7 +23,7 @@ var canal = 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
 var comunidad = 'https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt'
 var git = 'https://github.com/bakukats07/Tokito-muichiro-bot' 
 var correo = 'thekingdestroy507@gmail.com'
-global.redes = [canal, comunidad, git, correo].getRandom()
+global.redes = [canal, comunidad, git, correo].pickRandom()
 
 global.nombre = m.pushName || 'Anónimo'
 global.packsticker = `°.⎯⃘̶⎯̸⎯ܴ⎯̶᳞͇ࠝ⎯⃘̶⎯̸⎯ܴ⎯̶᳞͇ࠝ⎯⃘̶⎯̸.°\nᰔᩚ Usuario: ${nombre}\n❀ Bot: ${botname}\n✦ Fecha: ${fecha}\nⴵ Hora: ${moment.tz('America/Caracas').format('HH:mm:ss')}`
