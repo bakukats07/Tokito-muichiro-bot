@@ -487,7 +487,7 @@ await conn.sendMessage(m.chat, {
    contextInfo: {
     externalAdReply: {
       title: botname,
-      body: 'made in Skycloud',
+      body: 'MλÐɆ ƗN 스카이클라우드',
       thumbnail: await (await
 fetch(icono)).buffer(), 
       sourceUrl: canal, 
