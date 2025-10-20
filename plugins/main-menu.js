@@ -15,7 +15,7 @@ const libreria = global.libreria || 'Baileys'
 const textbot = global.textbot || ''
 const redes = global.github || 'https://github.com/bakukats07'
 const banner = global.banner ||'https://github.com/bakukats07/Mis-Imagenes/raw/main/c6c24dc91a5befb5e6a58e23163ce5f4.jpg'
-const icono = global.icono || 'https://telegra.ph/file/default-icon.jpg'
+const icono = global.icono || 'https://github.com/bakukats07/Mis-Imagenes/raw/main/f9d15a813993931a4e484f5176da4348.jpg'
 const canal = global.canal || 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M' 
 
 // 🧾 Texto del menú  
