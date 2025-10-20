@@ -29,8 +29,8 @@ global.yukiJadibts = true
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
-global.botname = 'Muichiro-MD'
-global.textbot = 'Muichiro, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud' 
+global.botname = 'Ⓜ︎𝒖𝒊𝒄𝒉𝒊𝒓𝒐-𝑴𝑫'
+global.textbot = 'Ꮇ𝒖𝒊𝒄𝒉𝒊𝒓𝒐, mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud' 
 global.dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ skycloud'
 global.author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ skycloud'
 global.etiqueta = 'Skycloud'
