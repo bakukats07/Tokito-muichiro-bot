@@ -480,7 +480,7 @@ const textoMenu = `
 
 await conn.sendMessage(m.chat, {
       image: { url: banner },
-      caption: textoMenu.trim(),
+      caption: `${textoMenu.trim()}\n\n💮 ${botname} | ${creador}`,
       mentions: [m.sender],
       footer: `💮 ${botname} | ${creador}`,
       contextInfo: {
