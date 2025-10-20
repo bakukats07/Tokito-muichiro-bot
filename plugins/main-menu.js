@@ -498,7 +498,7 @@ await conn.sendMessage(m.chat, {
       body: textbot,
       thumbnail: await (await
 fetch(icono)).buffer(), 
-      sourceUrl: canal, 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M' 
+      sourceUrl: canal, 
       mediaType: 1,
       renderLargerThumbnail: true
     }
