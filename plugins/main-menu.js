@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-let handler = async (m, { con, usedPrefix }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   try {
    const userId = m.sender
    const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
@@ -489,7 +489,7 @@ await conn.sendMessage(m.chat, {
     externalAdReply: {
       title: botname,
       body: textbot,
-      thumbnailUrl: await (await
+      thumbnail: await (await
 fetch(icono)).buffer(), 
       sourceUrl: redes,
       mediaType: 1,
