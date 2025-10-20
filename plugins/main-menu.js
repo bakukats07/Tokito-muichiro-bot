@@ -482,7 +482,7 @@ await conn.sendMessage(m.chat, {
   text: textoMenu, // 👈 sin texto visible
   contextInfo: {
     externalAdReply: {
-      title: `${botname} - Menú Principal`,
+      title: `${botname} - MλÐɆ ƗN 스카이클라우드`,
       body: `Versión ${version} | ${libreria}`,
       thumbnail: await (await fetch(banner)).buffer(),
       mediaType: 1,
