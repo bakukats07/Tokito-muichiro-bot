@@ -479,8 +479,6 @@ const textoMenu = `
 await conn.sendPresenceUpdate('composing', m.chat)
 await conn.sendMessage(m.chat, {
   image: { url: banner }, // imagen de banner desde settings.js
-  mimetype: 'video/mp4', 
-  fileName: 'menú.mp4',
   caption: textoMenu,
   mentions: [m.sender], 
   footer: 'Apenas en proceso, paciencia⚙️',
