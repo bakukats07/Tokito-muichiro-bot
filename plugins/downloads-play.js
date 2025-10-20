@@ -9,11 +9,31 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const videoMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([a-zA-Z0-9_-]{11})/)
     const query = videoMatch ? 'https://youtu.be/' + videoMatch[1] : text
     const search = await yts(query)
-    const result = videoMatch ? search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0] : search.all[0]
-    if (!result) throw 'ꕥ No se encontraron resultados.'
+
+    let result
+    if (videoMatch) {
+      result = search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0]
+    } else {
+      // Top 3 resultados si es búsqueda por nombre
+      const top3 = search.videos.slice(0, 3)
+      if (top3.length === 0) throw 'ꕥ No se encontraron resultados.'
+      
+      let msg = '❀ Se encontraron varios resultados:\n\n'
+      top3.forEach((v, i) => {
+        msg += `${i + 1}. ${v.title} - ${v.author.name} (${v.timestamp})\n`
+      })
+      msg += '\nEscribe el número del video que deseas descargar (1-3).'
+      await conn.reply(m.chat, msg, m)
+
+      // Esperamos la respuesta del usuario
+      const respuesta = await conn.waitMessage?.(m.chat, 30000) // 30s para responder
+      const index = parseInt(respuesta?.message?.text?.trim())
+      if (!index || index < 1 || index > top3.length) throw '⚠ Opción inválida o tiempo agotado.'
+      result = top3[index - 1]
+    }
 
     const { title, thumbnail, timestamp, views, ago, url, author, seconds } = result
-    if (seconds > 1800) throw '⚠ El video supera el límite de duración (10 minutos).'
+    if (seconds > 1800) throw '⚠ El video supera el límite de duración (30 minutos).'
 
     const vistas = formatViews(views)
     const info = `「✦」Descargando *<${title}>*\n\n> ❑ Canal » *${author.name}*\n> ♡ Vistas » *${vistas}*\n> ✧︎ Duración » *${timestamp}*\n> ☁︎ Publicado » *${ago}*\n> ➪ Link » ${url}`
@@ -25,14 +45,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
       if (!audio?.url) throw '⚠ No se pudo obtener el audio.'
       m.reply(`> ❀ *Audio procesado. Servidor:* \`${audio.api}\``)
       await conn.sendMessage(m.chat, { audio: { url: audio.url }, fileName: `${title}.mp3`, mimetype: 'audio/mpeg' }, { quoted: m })
-      await m.react('✔️')
     } else if (['play2', 'ytv', 'ytmp4', 'mp4'].includes(command)) {
       const video = await getVid(url)
       if (!video?.url) throw '⚠ No se pudo obtener el video.'
       m.reply(`> ❀ *Vídeo procesado. Servidor:* \`${video.api}\``)
       await conn.sendFile(m.chat, video.url, `${title}.mp4`, `> ❀ ${title}`, m)
-      await m.react('✔️')
     }
+
+    await m.react('✔️')
   } catch (e) {
     await m.react('✖️')
     return conn.reply(m.chat, typeof e === 'string' ? e : '⚠︎ Se ha producido un problema.\n> Usa *' + usedPrefix + 'report* para informarlo.\n\n' + e.message, m)
@@ -45,30 +65,24 @@ handler.group = true
 
 export default handler
 
-//========================================
-// FUNCIONES AUXILIARES
-//========================================
+// ================= FUNCIONES AUXILIARES =================
 
 async function getAud(url) {
   const apis = [
-    { api: 'Delirius', endpoint: `${global.APIs.delirius.url}/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url },
-    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url },
+    { api: 'ZenzzXD', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
+    { api: 'ZenzzXD v2', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp3v2?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
     { api: 'Yupra', endpoint: `${global.APIs.yupra.url}/api/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.resultado?.enlace },
-    { api: 'Lumin', endpoint: `${global.APIs.lumin.url}/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.url },
-    { api: 'Hiroshi', endpoint: `${global.APIs.hiroshi.url}/api/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.url },
-    { api: 'Zenz', endpoint: `${global.APIs.zenz.url}/downloader/ytmp3?url=${encodeURIComponent(url)}&apikey=${global.APIs.zenz.key}`, extractor: res => res.result?.url }
+    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url }
   ]
   return await fetchFromApis(apis)
 }
 
 async function getVid(url) {
   const apis = [
-    { api: 'Delirius', endpoint: `${global.APIs.delirius.url}/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url },
-    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url },
+    { api: 'ZenzzXD', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
+    { api: 'ZenzzXD v2', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp4v2?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
     { api: 'Yupra', endpoint: `${global.APIs.yupra.url}/api/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.resultado?.formatos?.[0]?.url },
-    { api: 'Lumin', endpoint: `${global.APIs.lumin.url}/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.url },
-    { api: 'Hiroshi', endpoint: `${global.APIs.hiroshi.url}/api/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.url },
-    { api: 'Zenz', endpoint: `${global.APIs.zenz.url}/downloader/ytmp4?url=${encodeURIComponent(url)}&apikey=${global.APIs.zenz.key}`, extractor: res => res.result?.url }
+    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url }
   ]
   return await fetchFromApis(apis)
 }
@@ -94,4 +108,4 @@ function formatViews(views) {
   if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M (${views.toLocaleString()})`
   if (views >= 1_000) return `${(views / 1_000).toFixed(1)}k (${views.toLocaleString()})`
   return views.toString()
-  }
+         }
