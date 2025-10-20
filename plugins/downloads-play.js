@@ -1,134 +1,129 @@
-import fetch from "node-fetch"
+import fetch from 'node-fetch'
 import yts from 'yt-search'
+import ytdl from 'ytdl-core'
+import fs from 'fs'
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-  try {
-    if (!text.trim()) return conn.reply(m.chat, `❀ Por favor, ingresa el nombre de la música a descargar.`, m)
-    await m.react('🕒')
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  if (!args[0]) return m.reply(`⚠️ Ejemplo: *${usedPrefix + command} nombre o enlace de la canción*`)
 
-    const videoMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([a-zA-Z0-9_-]{11})/)
-    const query = videoMatch ? 'https://youtu.be/' + videoMatch[1] : text
-    const search = await yts(query)
+  let texto = args.join(' ')
+  let result
 
-    if (videoMatch) {
-      const result = search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0]
-      return await sendResult(conn, m, result, command)
+  // 🔍 Buscar o procesar URL
+  if (ytdl.validateURL(texto)) {
+    const info = await ytdl.getInfo(texto)
+    result = {
+      title: info.videoDetails.title,
+      author: { name: info.videoDetails.author.name },
+      url: info.videoDetails.video_url,
+      thumbnail: info.videoDetails.thumbnails[0].url,
+      duration: parseInt(info.videoDetails.lengthSeconds)
     }
-
+  } else {
+    const search = await yts(texto)
     const top3 = search.videos.slice(0, 3)
-    if (top3.length === 0) throw 'ꕥ No se encontraron resultados.'
+    if (top3.length === 0) throw '❌ No se encontraron resultados en YouTube.'
 
-    let msg = '❀ Se encontraron varios resultados:\n\n'
+    let msg = '🎧 *Resultados encontrados:*\n\n'
     top3.forEach((v, i) => {
-      msg += `${i + 1}. ${v.title} - ${v.author.name} (${v.timestamp})\n`
+      msg += `${i + 1}. ${v.title}\n🕒 ${v.timestamp}\n📺 ${v.author.name}\n\n`
     })
-    msg += '\nResponde con el número del video que deseas descargar (1-3).'
+    msg += '✏️ *Responde con el número (1-3) del video que deseas descargar.*'
     await conn.reply(m.chat, msg, m)
 
-    // Guardar el contexto temporal para este usuario/chat
-    conn.tempReply = conn.tempReply || {}
-    conn.tempReply[m.sender] = {
-      chat: m.chat,
-      opciones: top3,
-      comando: command,
-      tiempo: Date.now()
+    const filtro = res => res.key.remoteJid === m.chat && /^\d+$/.test(res.message?.conversation?.trim())
+    let respuesta
+    try {
+      respuesta = await conn.awaitMessages(filtro, { time: 25000, max: 1 })
+    } catch {
+      return m.reply('⏰ Tiempo agotado. No respondiste a tiempo.')
     }
 
-    await m.react('🕒') // Indicamos que está esperando
+    const index = parseInt(respuesta[0].message.conversation.trim())
+    if (!index || index < 1 || index > top3.length)
+      return m.reply('⚠️ Opción inválida. Responde solo con 1, 2 o 3.')
+
+    result = top3[index - 1]
+  }
+
+  const { title, author, url, thumbnail, duration, timestamp } = result
+
+  // 🎵 Tarjeta informativa
+  const info = `🎶 *${title}*\n👤 *Canal:* ${author?.name || 'Desconocido'}\n🕒 *Duración:* ${timestamp || formatDuration(duration)}\n📺 *Link:* ${url}`
+  await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
+
+  await m.react('💿')
+  const preparando = await conn.reply(m.chat, `📥 *Preparando tu ${['play2', 'mp4', 'video'].includes(command) ? 'video 🎬' : 'audio 🎧'}...*`, m)
+
+  // 📂 Carpeta temporal (para reducir RAM)
+  const tempPath = './tmp'
+  if (!fs.existsSync(tempPath)) fs.mkdirSync(tempPath)
+
+  try {
+    // 🎧 AUDIO
+    if (['play', 'ytaudio', 'audio', 'mp3'].includes(command)) {
+      const audioFile = `${tempPath}/${Date.now()}.mp3`
+      await new Promise((resolve, reject) => {
+        const stream = ytdl(url, {
+          filter: 'audioonly',
+          quality: 'lowestaudio', // menor carga de CPU pero buena calidad
+          highWaterMark: 1 << 20  // 1 MB de buffer
+        })
+        .pipe(fs.createWriteStream(audioFile))
+        .on('finish', resolve)
+        .on('error', reject)
+      })
+
+      await conn.sendMessage(
+        m.chat,
+        { audio: { url: audioFile }, fileName: `${title}.mp3`, mimetype: 'audio/mp4', ptt: true },
+        { quoted: m }
+      )
+      fs.unlinkSync(audioFile)
+      await m.react('🎧')
+    }
+
+    // 🎬 VIDEO
+    else if (['play2', 'mp4', 'video'].includes(command)) {
+      const videoFile = `${tempPath}/${Date.now()}.mp4`
+      await new Promise((resolve, reject) => {
+        const stream = ytdl(url, {
+          filter: format => format.container === 'mp4' && parseInt(format.qualityLabel) <= 720,
+          quality: 'highest',
+          highWaterMark: 1 << 20 // menor uso de memoria
+        })
+        .pipe(fs.createWriteStream(videoFile))
+        .on('finish', resolve)
+        .on('error', reject)
+      })
+
+      await conn.sendMessage(
+        m.chat,
+        { video: { url: videoFile }, caption: `🎬 ${title}\n✨ Calidad 720p` },
+        { quoted: m }
+      )
+      fs.unlinkSync(videoFile)
+      await m.react('🎬')
+    }
+
+    await conn.sendMessage(m.chat, { delete: preparando.key })
+
   } catch (e) {
-    await m.react('✖️')
-    return conn.reply(m.chat, typeof e === 'string' ? e : e.message, m)
+    console.error(e)
+    await m.react('❌')
+    m.reply('⚠️ Ocurrió un error al descargar el archivo. Intenta con otro video o revisa tu conexión.')
   }
 }
 
-// Handler que capta las respuestas del usuario
-handler.before = async (m, { conn }) => {
-  if (!conn.tempReply) return
-  const ctx = conn.tempReply[m.sender]
-  if (!ctx) return
-
-  // Si no responde en 30s, limpiar
-  if (Date.now() - ctx.tiempo > 30000) {
-    delete conn.tempReply[m.sender]
-    return conn.reply(m.chat, '⚠ Tiempo agotado. Vuelve a usar el comando.', m)
-  }
-
-  const texto = m.text.trim()
-  if (!/^[1-3]$/.test(texto)) return // ignora si no manda un número
-
-  const opcion = parseInt(texto)
-  const result = ctx.opciones[opcion - 1]
-  const comando = ctx.comando
-  delete conn.tempReply[m.sender]
-
-  await sendResult(conn, m, result, comando)
-}
-
-async function sendResult(conn, m, result, command) {
-  const { title, thumbnail, timestamp, views, ago, url, author, seconds } = result
-  if (seconds > 1800) throw '⚠ El video supera el límite de duración (30 minutos).'
-
-  const vistas = formatViews(views)
-  const info = `「✦」Descargando *<${title}>*\n\n> ❑ Canal » *${author.name}*\n> ♡ Vistas » *${vistas}*\n> ✧︎ Duración » *${timestamp}*\n> ☁︎ Publicado » *${ago}*\n> ➪ Link » ${url}`
-  const thumb = (await conn.getFile(thumbnail)).data
-  await conn.sendMessage(m.chat, { image: thumb, caption: info }, { quoted: m })
-
-  if (['play', 'yta', 'ytmp3', 'playaudio'].includes(command)) {
-    const audio = await getAud(url)
-    if (!audio?.url) throw '⚠ No se pudo obtener el audio.'
-    await conn.sendMessage(m.chat, { audio: { url: audio.url }, fileName: `${title}.mp3`, mimetype: 'audio/mpeg' }, { quoted: m })
-  } else if (['play2', 'ytv', 'ytmp4', 'mp4'].includes(command)) {
-    const video = await getVid(url)
-    if (!video?.url) throw '⚠ No se pudo obtener el video.'
-    await conn.sendFile(m.chat, video.url, `${title}.mp4`, `> ❀ ${title}`, m)
-  }
-
-  await m.react('✔️')
-}
-
-handler.command = handler.help = ['play', 'yta', 'ytmp3', 'play2', 'ytv', 'ytmp4', 'playaudio', 'mp4']
+handler.help = ['play', 'ytaudio', 'audio', 'mp3', 'play2', 'mp4', 'video']
 handler.tags = ['descargas']
-handler.group = true
+handler.command = /^(play|ytaudio|audio|mp3|play2|mp4|video)$/i
+
 export default handler
 
-// ================= FUNCIONES AUXILIARES =================
-async function getAud(url) {
-  const apis = [
-    { api: 'ZenzzXD', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
-    { api: 'Yupra', endpoint: `${global.APIs.yupra.url}/api/downloader/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.resultado?.enlace },
-    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp3?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url }
-  ]
-  return await fetchFromApis(apis)
+function formatDuration(sec) {
+  if (!sec) return 'Desconocida'
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
-
-async function getVid(url) {
-  const apis = [
-    { api: 'ZenzzXD', endpoint: `${global.APIs.zenzxz.url}/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.download_url },
-    { api: 'Yupra', endpoint: `${global.APIs.yupra.url}/api/downloader/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.resultado?.formatos?.[0]?.url },
-    { api: 'Vreden', endpoint: `${global.APIs.vreden.url}/api/ytmp4?url=${encodeURIComponent(url)}`, extractor: res => res.result?.download?.url }
-  ]
-  return await fetchFromApis(apis)
-}
-
-async function fetchFromApis(apis) {
-  for (const { api, endpoint, extractor } of apis) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-      const res = await fetch(endpoint, { signal: controller.signal }).then(r => r.json())
-      clearTimeout(timeout)
-      const link = extractor(res)
-      if (link) return { url: link, api }
-    } catch (e) {}
-    await new Promise(resolve => setTimeout(resolve, 500))
-  }
-  return null
-}
-
-function formatViews(views) {
-  if (views === undefined) return "No disponible"
-  if (views >= 1_000_000_000) return `${(views / 1_000_000_000).toFixed(1)}B (${views.toLocaleString()})`
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M (${views.toLocaleString()})`
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}k (${views.toLocaleString()})`
-  return views.toString()
-      }
