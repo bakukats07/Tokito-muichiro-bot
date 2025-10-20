@@ -479,6 +479,7 @@ const textoMenu = `
 await conn.sendMessage(m.chat, {
   image: { url: banner }, // Imagen de banner desde settings.js
   caption: textoMenu,
+  mentions: [m.sender], 
   contextInfo: {
     externalAdReply: {
       title: botname,
