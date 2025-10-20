@@ -478,8 +478,8 @@ const textoMenu = `
 
 await conn.sendMessage(m.chat, {
   video: { url: banner }, // Video de banner desde settings.js
-  mimetype: 'video/mp4' 
-  fileName: 'menú.mp4'
+  mimetype: 'video/mp4', 
+  fileName: 'menú.mp4', 
   caption: textoMenu,
   mentions: [m.sender], 
   contextInfo: {
