@@ -14,21 +14,34 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (videoMatch) {
       result = search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0]
     } else {
-      // Top 3 resultados si es búsqueda por nombre
+      // --- Top 3 resultados si es búsqueda por nombre ---
       const top3 = search.videos.slice(0, 3)
       if (top3.length === 0) throw 'ꕥ No se encontraron resultados.'
-      
+
       let msg = '❀ Se encontraron varios resultados:\n\n'
       top3.forEach((v, i) => {
         msg += `${i + 1}. ${v.title} - ${v.author.name} (${v.timestamp})\n`
       })
-      msg += '\nEscribe el número del video que deseas descargar (1-3).'
+      msg += '\nResponde con el número del video que deseas descargar (1-3).'
       await conn.reply(m.chat, msg, m)
 
-      // Esperamos la respuesta del usuario
-      const respuesta = await conn.waitMessage?.(m.chat, 30000) // 30s para responder
-      const index = parseInt(respuesta?.message?.text?.trim())
-      if (!index || index < 1 || index > top3.length) throw '⚠ Opción inválida o tiempo agotado.'
+      // Esperar respuesta del usuario (máx. 30 segundos)
+      const filtro = res =>
+        res.key.remoteJid === m.chat &&
+        res.message?.conversation &&
+        /^\d+$/.test(res.message.conversation.trim())
+
+      let respuesta
+      try {
+        respuesta = await conn.awaitMessages(filtro, { time: 30000, max: 1 })
+      } catch {
+        throw '⚠ Tiempo agotado. No respondiste a tiempo.'
+      }
+
+      const index = parseInt(respuesta[0].message.conversation.trim())
+      if (!index || index < 1 || index > top3.length)
+        throw '⚠ Opción inválida. Debes responder con un número del 1 al 3.'
+
       result = top3[index - 1]
     }
 
@@ -55,7 +68,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     await m.react('✔️')
   } catch (e) {
     await m.react('✖️')
-    return conn.reply(m.chat, typeof e === 'string' ? e : '⚠︎ Se ha producido un problema.\n> Usa *' + usedPrefix + 'report* para informarlo.\n\n' + e.message, m)
+    return conn.reply(
+      m.chat,
+      typeof e === 'string'
+        ? e
+        : '⚠︎ Se ha producido un problema.\n> Usa *' + usedPrefix + 'report* para informarlo.\n\n' + e.message,
+      m
+    )
   }
 }
 
@@ -108,4 +127,4 @@ function formatViews(views) {
   if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M (${views.toLocaleString()})`
   if (views >= 1_000) return `${(views / 1_000).toFixed(1)}k (${views.toLocaleString()})`
   return views.toString()
-         }
+}
