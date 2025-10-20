@@ -1,7 +1,10 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
-  try {
+ if (!conn || !conn.user) return m.reply('⚠️ No se detectó conexión activa en este subbot.')
+}
+  
+   try {
    const userId = m.sender
    const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
    const totalCommands = Object.keys(global.plugins || {}).length || 0
@@ -476,32 +479,28 @@ const textoMenu = `
 
 // 🖼️ Enviar el menú con banner + icono
 
-await conn.sendPresenceUpdate('composing', m.chat)
 await conn.sendMessage(m.chat, {
-  image: { url: banner }, // imagen de banner desde settings.js
-  caption: textoMenu,
-  mentions: [m.sender], 
-  footer: 'Apenas en proceso, paciencia⚙️',
-      
-      headerType: 4, 
-   contextInfo: {
-    externalAdReply: {
-      title: botname,
-      body: 'MλÐɆ ƗN 스카이클라우드',
-      thumbnail: await (await
-fetch(icono)).buffer(), 
-      sourceUrl: canal, 
-      mediaType: 2,
-      renderLargerThumbnail: true
-    }
-  }
-}, { quoted: m })
-} catch (err) {
+      image: { url: banner },
+      caption: textoMenu.trim(),
+      mentions: [m.sender],
+      footer: `💮 ${botname} | ${creador}`,
+      contextInfo: {
+        externalAdReply: {
+          title: `${botname} - Menú Principal`,
+          body: `Versión ${version} | ${libreria}`,
+          thumbnail: await (await fetch(icono)).buffer(),
+          sourceUrl: canal,
+          mediaType: 1,
+          renderLargerThumbnail: true
+        }
+      }
+    }, { quoted: m })
+
+  } catch (err) {
     console.error(err)
     m.reply('❌ Hubo un error al mostrar el menú.')
   }
 }
-
 handler.help = ['menu']
 handler.tags = ['main']
 handler.command = ['menu', 'help', 'menú']
