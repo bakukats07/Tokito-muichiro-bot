@@ -2,8 +2,8 @@ import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
  if (!conn || !conn.user) return m.reply('⚠️ No se detectó conexión activa en este subbot.')
-}
- try {
+ 
+  try {
    const userId = m.sender
    const totalreg = Object.keys(global.db?.data?.users || {}).length || 0
    const totalCommands = Object.keys(global.plugins || {}).length || 0
