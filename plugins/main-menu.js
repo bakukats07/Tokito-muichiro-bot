@@ -489,7 +489,7 @@ await conn.sendMessage(m.chat, {
    contextInfo: {
     externalAdReply: {
       title: botname,
-      body: 'made in Skycloud,
+      body: 'made in Skycloud',
       thumbnail: await (await
 fetch(icono)).buffer(), 
       sourceUrl: canal, 
