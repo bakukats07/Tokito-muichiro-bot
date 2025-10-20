@@ -42,7 +42,7 @@ termux-setup-storage
 apt update && apt upgrade && pkg install -y git nodejs ffmpeg imagemagick yarn
 ```
 ```bash
-git clone https://github.com/bakukats07/Tokito-muichiro-bot && cd Muichiro-MD
+git clone https://github.com/bakukats07/Tokito-muichiro-bot && cd Tokito-muichiro-bot
 ```
 ```bash
 yarn install
@@ -84,19 +84,19 @@ pm2 start index
 ### ✋En caso de detenerse
 > _Si despues que ya instalastes el bot y termux te salta en blanco, se fue tu internet o reiniciaste tu celular, solo realizaras estos pasos:_
 ```bash
-cd && cd Muichiro-MD && npm start
+cd && cd Tokito-muichiro-bot && npm start
 ```
 ----
 ### 🔢Obtener nuevo código QR 
 > *Detén el bot, haz click en el símbolo (ctrl) [default=z] usar la letra "z" + "ENTER" hasta que salga algo verdes similar a: `~Muichiro-MD $`*
 > **Escribe los siguientes comandos uno x uno :**
 ```bash 
-cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run qr
+cd && cd Tokito-muichiro-bot && rm -rf sessions/Principal && npm run qr
 ```
 ----
 ### ⛩️Obtener nuevo código de teléfono 
 ```bash 
-cd && cd Muichiro-MD && rm -rf sessions/Principal && npm run code
+cd && cd Tokito-muichiro-bot && rm -rf sessions/Principal && npm run code
 ```
 </details>
 
@@ -115,7 +115,7 @@ grep -q 'bash\|wget' <(dpkg -l) || apt install -y bash wget && wget -O - https:/
 *Si después de instalar el bot e iniciar la sesión (deseas poner tu número es la lista de owner pon este comando:*
 
 ```bash
-cd && cd Muichiro-MD && nano settings.js
+cd && cd Tokito-muichiro-bot && nano settings.js
 ```
 #### Para que no pierda su progreso en Muichiro-MD, estos comandos realizarán un respaldo de su `database.json` y se agregará a la versión más reciente.
 > *Estos comandos solo funcionan para TERMUX, REPLIT, LINUX*
