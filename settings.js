@@ -53,13 +53,31 @@ ch1: '120363401404146384@newsletter'
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.APIs = {
-xyro: { url: 'https://xyro.site' , key: null },
-yupra: { url: 'https://api.yupra.my.id' , key: null },
-vreden: { url: 'https://api.vreden.web.id' , key: null },
-delirius: { url: 'https://api.delirius.store' , key: null },
-zenzxz: { url: 'https://api.zenzxz.my.id' , key: null },
-siputzx: { url: 'https://api.siputzx.my.id' , key: null }
-}
+  delirius: { 
+    url: 'https://api.delirius.store', 
+    key: null 
+  },
+  vreden: { 
+    url: 'https://api.vreden.me', 
+    key: null 
+  },
+  yupra: { 
+    url: 'https://api.yupra.my.id', 
+    key: null 
+  },
+  lumin: { 
+    url: 'https://luminai.my.id/api', 
+    key: null 
+  },
+  hiroshi: { 
+    url: 'https://hiroshiapi.vercel.app', 
+    key: null 
+  },
+  zenz: { 
+    url: 'https://api.zenzapis.xyz', 
+    key: 'TU_API_KEY_AQUI'
+  }
+  }
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
