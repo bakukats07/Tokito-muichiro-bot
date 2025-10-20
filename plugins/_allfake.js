@@ -21,7 +21,7 @@ global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', s
 
 var canal = 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'  
 var comunidad = 'https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt'
-var git = 'https://github.com/bakukats07 = 'https://github.com/bakukats07/Tokito-muichiro-bot' 
+var git = 'https://github.com/bakukats07/Tokito-muichiro-bot' 'https://github.com/bakukats07/Tokito-muichiro-bot' 
 var correo = 'thekingdestroy507@gmail.com'
 global.redes = [canal, comunidad, git, github, correo].getRandom()
 
