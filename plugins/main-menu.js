@@ -35,51 +35,51 @@ const textoMenu = `
 
 > ✿ Comandos de Economía para ganar dinero.
 ✦ #w • #work • #trabajar
-⸙ Ganar coins trabajando.
+> ⸙ Ganar coins trabajando.
 ✦ #slut • #protituirse
-⸙ Ganar coins prostituyéndote.
+> ⸙ Ganar coins prostituyéndote.
 ✦ #coinflip • #flip • #cf + [cantidad] <cara/cruz>
-⸙ Apostar coins en un cara o cruz.
+> ⸙ Apostar coins en un cara o cruz.
 ✦ #crime • #crimen
-⸙ Ganar coins rapido.
+> ⸙ Ganar coins rapido.
 ✦ #roulette • #rt + [red/black] [cantidad]
-⸙ Apostar coins en una ruleta.
+> ⸙ Apostar coins en una ruleta.
 ✦ #casino • #apostar • #slot + [cantidad]
-⸙ Apuestar coins en el casino.
+> ⸙ Apuestar coins en el casino.
 ✦ #balance • #bal • #bank + <usuario>
-⸙ Ver cuantos coins tienes en el banco.
+> ⸙ Ver cuantos coins tienes en el banco.
 ✦ #deposit • #dep • #depositar • #d + [cantidad] | all
-⸙ Depositar tus coins en el banco.
+> ⸙ Depositar tus coins en el banco.
 ✦ #withdraw • #with • #retirar + [cantidad] | all
-⸙ Retirar tus coins del banco.
+> ⸙ Retirar tus coins del banco.
 ✦ #economyinfo • #einfo
-⸙ Ver tu información de economía en el grupo.
+> ⸙ Ver tu información de economía en el grupo.
 ✦ #givecoins • #pay • #coinsgive + [usuario] [cantidad]
-⸙ Dar coins a un usuario.
+> ⸙ Dar coins a un usuario.
 ✦ #miming • #minar • #mine
-⸙ Realizar trabajos de minería y ganar coins.
+> ⸙ Realizar trabajos de minería y ganar coins.
 ✦ #daily • #diario
-⸙ Reclamar tu recompensa diaria.
+> ⸙ Reclamar tu recompensa diaria.
 ✦ #cofre • #coffer
-⸙ Reclamar tu cofre diario.
+> ⸙ Reclamar tu cofre diario.
 ✦ #weekly • #semanal
-⸙ Reclamar tu recompensa semanal.
+> ⸙ Reclamar tu recompensa semanal.
 ✦ #monthly • #mensual
-⸙ Reclamar tu recompensa mensual.
+> ⸙ Reclamar tu recompensa mensual.
 ✦ #steal • #robar • #rob + [@mencion]
-⸙ Intentar robar coins a un usuario.
+> ⸙ Intentar robar coins a un usuario.
 ✦ #economyboard • #eboard • #baltop + <pagina>
-⸙ Ver tu información de economía en el grupo.
+> ⸙ Ver tu información de economía en el grupo.
 ✦ #aventura • #adventure
-⸙ Aventuras para ganar coins y exp.
+> ⸙ Aventuras para ganar coins y exp.
 ✦ #curar • #heal
-⸙ Curar salud para salir de aventuras.
+> ⸙ Curar salud para salir de aventuras.
 ✦ #cazar • #hunt
-⸙ cazar animales para ganar coins y exp.
+> ⸙ cazar animales para ganar coins y exp.
 ✦ #fish • #pescar
-⸙ Ganar coins y exp pescando.
+> ⸙ Ganar coins y exp pescando.
 ✦ #mazmorra • #dungeon
-⸙ Explorar mazmorras para ganar coins y exp.
+> ⸙ Explorar mazmorras para ganar coins y exp.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ
 
 
@@ -88,15 +88,15 @@ const textoMenu = `
 
 > ✿ Comandos de Descargas para descargar archivos de varias fuentes.
 ✦ #tiktok • #tt + [Link] / [busqueda]
-⸙ Descargar un video de TikTok.
+> ⸙ Descargar un video de TikTok.
 ✦ #mediafire • #mf + [Link]
-⸙ Descargar un archivo de MediaFire.
+> ⸙ Descargar un archivo de MediaFire.
 ✦ #mega • #mg + [Link]
-⸙ Descargar un archivo de MEGA.
+> ⸙ Descargar un archivo de MEGA.
 ✦ #play • #play2 • #ytmp3 • #ytmp4 + [Cancion] / [Link]
-⸙ Descargar una cancion o vídeo de YouTube.
+> ⸙ Descargar una cancion o vídeo de YouTube.
 ✦ #facebook • #fb + [Link]
-⸙ Descargar un video de Facebook.
+> ⸙ Descargar un video de Facebook.
 ✦ #twitter • #x + [Link]
 ⸙ Descargar un video de Twitter/X.
 ✦ #ig • #instagram + [Link]
