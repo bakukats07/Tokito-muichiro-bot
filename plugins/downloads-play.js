@@ -1,70 +1,71 @@
 import fs from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
+import { fileURLToPath, pathToFileURL } from 'url'
+import { pipeline } from 'stream'
+import { promisify } from 'util'
 
-// Obtener la ruta absoluta del archivo actual
-const __dirname = path.dirname(new URL(import.meta.url).pathname)
+const streamPipeline = promisify(pipeline)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-// Importar dinámicamente main-checkApis.js
-const { checkActiveAPI } = await import(`file://${path.join(__dirname, '../main-checkApis.js')}`)
+// ✅ Importar módulo de APIs con ruta segura (Termux compatible)
+const mainApisPath = pathToFileURL(path.join(__dirname, '../main-checkApis.js')).href
+const { checkActiveAPI } = await import(mainApisPath)
 
-// Rutas absolutas para tmp y thumbnail
 const tmpDir = path.join(__dirname, 'tmp')
-const botPfp = path.join(__dirname, '../media/bot.jpg') // thumbnail del bot
+const botPfp = path.join(__dirname, '../media/bot.jpg')
 
-// Crear carpeta tmp si no existe
+// Crear carpeta temporal si no existe
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
+// ⚡ Firma del creador (puedes personalizarla)
+const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
+
+// 🧩 Manejador principal
 let handler = async (m, { conn, args, command, usedPrefix }) => {
-  if (!args[0]) return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también con un link de YouTube.`)
+  if (!args[0]) {
+    return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también con un link de YouTube.`)
+  }
 
   const text = args.join(' ')
   const apiBase = await checkActiveAPI()
   if (!apiBase) return m.reply('⚠️ Ninguna API está activa en este momento, inténtalo más tarde.')
 
   try {
-    m.reply('🔎 Buscando contenido, por favor espera un momento...')
+    await m.reply('🔎 Buscando y descargando contenido...')
 
-    let endpoint
-    let type
-
-    // Detectar tipo de comando
-    if (['play', 'ytaudio', 'audio', 'mp3'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp3?url=${encodeURIComponent(text)}`
-      type = 'audio'
-    } else if (['play2', 'mp4', 'video'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp4?url=${encodeURIComponent(text)}`
-      type = 'video'
-    } else {
-      return m.reply('❓ Comando no reconocido.')
-    }
-
+    // Determinar tipo de descarga
+    const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command)
+    const endpoint = `${apiBase}/api/download/${isAudio ? 'ytmp3' : 'ytmp4'}?url=${encodeURIComponent(text)}`
     const res = await fetch(endpoint)
     const data = await res.json()
 
-    if (!data || !data.result || !data.result.url) {
-      throw new Error('⚠️ No se pudo obtener el contenido del video/audio.')
-    }
+    if (!data?.result?.url) throw new Error('⚠️ No se pudo obtener el contenido del video/audio.')
 
     const fileUrl = data.result.url
-    const ext = type === 'audio' ? '.mp3' : '.mp4'
+    const ext = isAudio ? '.mp3' : '.mp4'
     const tmpFile = path.join(tmpDir, `file_${Date.now()}${ext}`)
 
+    // 🔻 Descarga usando stream (menos consumo de memoria)
     const response = await fetch(fileUrl)
-    const buffer = await response.arrayBuffer()
-    fs.writeFileSync(tmpFile, Buffer.from(buffer))
+    if (!response.ok) throw new Error('Error al descargar el archivo.')
 
+    await streamPipeline(response.body, fs.createWriteStream(tmpFile))
+
+    // Miniatura (si existe)
     const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
-    if (type === 'audio') {
+    // 📤 Enviar al chat según tipo
+    if (isAudio) {
       await conn.sendMessage(m.chat, {
-        audio: fs.readFileSync(tmpFile),
+        audio: { url: tmpFile },
         mimetype: 'audio/mpeg',
         ptt: false,
         contextInfo: {
           externalAdReply: {
             title: `🎧 ${data.result.title || 'Audio Descargado'}`,
-            body: '🎶 Enviado por tu bot favorito',
+            body: `🎶 Tu bot favorito\n${CREATOR_SIGNATURE}`,
             thumbnail,
             sourceUrl: data.result.url
           }
@@ -72,12 +73,12 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
-        video: fs.readFileSync(tmpFile),
-        caption: `🎬 ${data.result.title || 'Video Descargado'}\n📥 Enviado por tu bot`,
+        video: { url: tmpFile },
+        caption: `🎬 ${data.result.title || 'Video Descargado'}${CREATOR_SIGNATURE}`,
         contextInfo: {
           externalAdReply: {
             title: data.result.title || 'Video descargado',
-            body: '🎥 Tu bot siempre activo',
+            body: `🎥 Tu bot siempre activo\n${CREATOR_SIGNATURE}`,
             thumbnail,
             sourceUrl: data.result.url
           }
@@ -85,16 +86,17 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       }, { quoted: m })
     }
 
-    // Eliminar archivo temporal
+    // 🧹 Borrar archivo temporal
     setTimeout(() => {
       if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
-    }, 15 * 1000)
+    }, 10 * 1000) // elimina en 10 segundos
 
-    await m.reply('✅ Descarga completada y enviada correctamente 🎶')
+    console.log(`✅ Archivo enviado y eliminado: ${tmpFile}`)
+    await m.reply('✅ Descarga completada correctamente 🎶')
 
   } catch (err) {
-    console.error(err)
-    m.reply('⚠️ Error al intentar procesar tu solicitud, intenta nuevamente más tarde.')
+    console.error('❌ Error en downloads-play:', err)
+    m.reply('⚠️ Hubo un problema al procesar la descarga. Intenta nuevamente.')
   }
 }
 
