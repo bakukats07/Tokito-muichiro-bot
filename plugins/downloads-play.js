@@ -1,75 +1,100 @@
-import fetch from 'node-fetch'
 import fs from 'fs'
-import yts from 'yt-search'
-import { getActiveAPI } from './tmp/checkApis.js'
+import path from 'path'
+import fetch from 'node-fetch'
+import { checkActiveAPI } from './plugins/main-checkApis.js'
 
-const tmpFolder = 'plugins/tmp/'
+let handler = async (m, { conn, args, command, usedPrefix }) => {
+  if (!args[0]) return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también con un link de YouTube.`)
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`❗ Ingresa el nombre o link de una canción o video.\n\nEjemplo:\n${usedPrefix + command} Enemy - Imagine Dragons`)
+  const text = args.join(' ')
+  const apiBase = await checkActiveAPI()
+  if (!apiBase) return m.reply('⚠️ Ninguna API está activa en este momento, inténtalo más tarde.')
 
-  const activeApi = await getActiveAPI()
-  if (!activeApi) return m.reply('⚠️ No hay APIs activas por el momento, intenta más tarde.')
-
-  m.react('⏳')
-
-  // Detectar si es link o búsqueda
-  const isLink = /youtu\.be|youtube\.com/i.test(text)
-  let video
-  if (isLink) {
-    const info = await yts({ videoId: text.split('v=')[1] })
-    video = info
-  } else {
-    const { videos } = await yts(text)
-    if (!videos || !videos.length) return m.reply('❌ No se encontraron resultados.')
-    video = videos[0]
-  }
-
-  const url = video.url
-  const title = video.title
-  const isAudio = /play|ytaudio|audio|mp3/i.test(command)
-  const isVideo = /play2|video|mp4/i.test(command)
+  const tmpDir = path.join(process.cwd(), 'plugins', 'tmp')
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
   try {
-    const apiBase = activeApi === 'yupra' ? 'https://api.yupra.my.id/api/download' : 'https://api.yupra.my.id/api/download'
-    const endpoint = isAudio
-      ? `${apiBase}/ytmp3?url=${encodeURIComponent(url)}`
-      : `${apiBase}/ytmp4?url=${encodeURIComponent(url)}`
-    
-    const res = await fetch(endpoint)
-    const json = await res.json()
-    if (!json || !json.result) throw new Error('Respuesta vacía del servidor.')
+    m.reply('🔎 Buscando contenido, por favor espera un momento...')
 
-    const mediaUrl = isAudio ? json.result.download_url : json.result.download
-    const ext = isAudio ? '.mp3' : '.mp4'
-    const tmpPath = `${tmpFolder}${Date.now()}${ext}`
+    let endpoint
+    let type
 
-    const buffer = await fetch(mediaUrl).then(r => r.arrayBuffer())
-    fs.writeFileSync(tmpPath, Buffer.from(buffer))
-
-    if (isAudio) {
-      await conn.sendMessage(m.chat, { 
-        audio: { url: tmpPath }, 
-        mimetype: 'audio/mp4', 
-        ptt: true 
-      }, { quoted: m })
-      await conn.sendMessage(m.chat, { text: '🎧 *Descarga completada correctamente.*' }, { quoted: m })
+    // Detectar tipo de comando
+    if (['play', 'ytaudio', 'audio', 'mp3'].includes(command)) {
+      endpoint = `${apiBase}/api/download/ytmp3?query=${encodeURIComponent(text)}`
+      type = 'audio'
+    } else if (['play2', 'mp4', 'video'].includes(command)) {
+      endpoint = `${apiBase}/api/download/ytmp4?query=${encodeURIComponent(text)}`
+      type = 'video'
     } else {
-      await conn.sendMessage(m.chat, { 
-        video: { url: tmpPath }, 
-        caption: `🎬 *${title}*\n\n✅ Video enviado con éxito.` 
+      return m.reply('❓ Comando no reconocido.')
+    }
+
+    // Llamar API
+    const res = await fetch(endpoint)
+    const data = await res.json()
+
+    if (!data || !data.result || !data.result.url) {
+      throw new Error('⚠️ No se pudo obtener el contenido.')
+    }
+
+    const fileUrl = data.result.url
+    const ext = type === 'audio' ? '.mp3' : '.mp4'
+    const tmpFile = path.join(tmpDir, `file_${Date.now()}${ext}`)
+
+    // Descargar archivo temporal
+    const response = await fetch(fileUrl)
+    const buffer = await response.arrayBuffer()
+    fs.writeFileSync(tmpFile, Buffer.from(buffer))
+
+    // Enviar resultado con el ícono del bot
+    const botPfp = './media/bot.jpg' // Usa aquí el ícono del bot (ajusta la ruta si es diferente)
+
+    if (type === 'audio') {
+      await conn.sendMessage(m.chat, {
+        audio: { url: tmpFile },
+        mimetype: 'audio/mpeg',
+        ptt: false,
+        contextInfo: {
+          externalAdReply: {
+            title: `🎧 ${data.result.title || 'Audio Descargado'}`,
+            body: '🎶 Enviado por tu bot favorito',
+            thumbnail: fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null,
+            sourceUrl: data.result.url
+          }
+        }
+      }, { quoted: m })
+    } else {
+      await conn.sendMessage(m.chat, {
+        video: { url: tmpFile },
+        caption: `🎬 ${data.result.title || 'Video Descargado'}\n📥 Enviado por tu bot`,
+        contextInfo: {
+          externalAdReply: {
+            title: data.result.title || 'Video descargado',
+            body: '🎥 Tu bot siempre activo',
+            thumbnail: fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null,
+            sourceUrl: data.result.url
+          }
+        }
       }, { quoted: m })
     }
 
-    fs.unlinkSync(tmpPath)
-    m.react('✅')
-  } catch (e) {
-    console.error(e)
-    m.reply('⚠️ Error al procesar tu solicitud. Intenta nuevamente.')
+    // Eliminar archivo temporal
+    setTimeout(() => {
+      fs.unlinkSync(tmpFile)
+    }, 15 * 1000)
+
+    await m.reply('✅ Descarga completada y enviada correctamente 🎶')
+
+  } catch (err) {
+    console.error(err)
+    m.reply('⚠️ Error al intentar procesar tu solicitud, intenta nuevamente más tarde.')
   }
 }
 
-handler.help = ['play', 'play2', 'ytaudio', 'audio', 'mp3', 'video', 'mp4']
-handler.tags = ['downloader']
-handler.command = /^play2?|ytaudio|audio|video|mp3|mp4$/i
+handler.help = ['play', 'play2', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
+handler.tags = ['descargas']
+handler.command = /^(play|play2|ytaudio|audio|mp3|mp4|video)$/i
+handler.limit = 1
+
 export default handler
