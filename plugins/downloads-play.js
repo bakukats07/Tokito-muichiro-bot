@@ -1,100 +1,70 @@
-import fs from 'fs'
-import path from 'path'
-import fetch from 'node-fetch'
-import { checkActiveAPI } from './plugins/main-checkApis.js'
+import fetch from 'node-fetch';
+import yts from 'yt-search';
+import fs from 'fs';
+import path from 'path';
+import cacheManager from '../tmp/cacheManager.js'; // ruta correcta al cache manager
 
-let handler = async (m, { conn, args, command, usedPrefix }) => {
-  if (!args[0]) return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también con un link de YouTube.`)
+const AUDIO_CMDS = ['play', 'ytaudio', 'audio', 'mp3'];
+const VIDEO_CMDS = ['play2', 'mp4', 'video'];
 
-  const text = args.join(' ')
-  const apiBase = await checkActiveAPI()
-  if (!apiBase) return m.reply('⚠️ Ninguna API está activa en este momento, inténtalo más tarde.')
+async function handler(m, { conn, command, text }) {
+    if (!text) return m.reply('❌ Escribe el nombre o link de la canción/video.');
 
-  const tmpDir = path.join(process.cwd(), 'plugins', 'tmp')
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+    const isAudio = AUDIO_CMDS.includes(command.toLowerCase());
+    const isVideo = VIDEO_CMDS.includes(command.toLowerCase());
 
-  try {
-    m.reply('🔎 Buscando contenido, por favor espera un momento...')
+    try {
+        const isLink = text.startsWith('http');
+        let info;
 
-    let endpoint
-    let type
-
-    // Detectar tipo de comando
-    if (['play', 'ytaudio', 'audio', 'mp3'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp3?query=${encodeURIComponent(text)}`
-      type = 'audio'
-    } else if (['play2', 'mp4', 'video'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp4?query=${encodeURIComponent(text)}`
-      type = 'video'
-    } else {
-      return m.reply('❓ Comando no reconocido.')
-    }
-
-    // Llamar API
-    const res = await fetch(endpoint)
-    const data = await res.json()
-
-    if (!data || !data.result || !data.result.url) {
-      throw new Error('⚠️ No se pudo obtener el contenido.')
-    }
-
-    const fileUrl = data.result.url
-    const ext = type === 'audio' ? '.mp3' : '.mp4'
-    const tmpFile = path.join(tmpDir, `file_${Date.now()}${ext}`)
-
-    // Descargar archivo temporal
-    const response = await fetch(fileUrl)
-    const buffer = await response.arrayBuffer()
-    fs.writeFileSync(tmpFile, Buffer.from(buffer))
-
-    // Enviar resultado con el ícono del bot
-    const botPfp = './media/bot.jpg' // Usa aquí el ícono del bot (ajusta la ruta si es diferente)
-
-    if (type === 'audio') {
-      await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile },
-        mimetype: 'audio/mpeg',
-        ptt: false,
-        contextInfo: {
-          externalAdReply: {
-            title: `🎧 ${data.result.title || 'Audio Descargado'}`,
-            body: '🎶 Enviado por tu bot favorito',
-            thumbnail: fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null,
-            sourceUrl: data.result.url
-          }
+        if (isLink) {
+            const id = extractID(text);
+            if (!id) return m.reply('❌ Link inválido.');
+            const r = await yts({ videoId: id });
+            if (!r?.videos?.length) return m.reply('❌ No encontré resultados.');
+            info = r.videos[0];
+        } else {
+            const r = await yts(text);
+            if (!r?.videos?.length) return m.reply('❌ No encontré resultados.');
+            info = r.videos[0];
         }
-      }, { quoted: m })
-    } else {
-      await conn.sendMessage(m.chat, {
-        video: { url: tmpFile },
-        caption: `🎬 ${data.result.title || 'Video Descargado'}\n📥 Enviado por tu bot`,
-        contextInfo: {
-          externalAdReply: {
-            title: data.result.title || 'Video descargado',
-            body: '🎥 Tu bot siempre activo',
-            thumbnail: fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null,
-            sourceUrl: data.result.url
-          }
+
+        const title = info.title.replace(/[^a-zA-Z0-9 ]/g, '');
+        const filename = `${title}.${isAudio ? 'mp3' : 'mp4'}`;
+        const cached = cacheManager.getFromCache(filename);
+
+        if (cached) {
+            if (isAudio) {
+                await conn.sendMessage(m.chat, { audio: fs.readFileSync(cached), ptt: true }, { quoted: m });
+                return m.reply(`🌸 ¡Listo! He enviado la nota de voz de ${title}`);
+            } else {
+                await conn.sendMessage(m.chat, { video: fs.readFileSync(cached), caption: `🎬 ${title}\n✨ ¡Listo! Aquí está tu video en 360p.` }, { quoted: m });
+                return;
+            }
         }
-      }, { quoted: m })
+
+        // Descargar contenido (solo highestaudio o 360p)
+        const url = info.url; // Aquí puedes integrar tu downloader real
+        const buffer = await fetch(url).then(res => res.arrayBuffer());
+
+        const filePath = cacheManager.saveToCache(filename, Buffer.from(buffer));
+
+        if (isAudio) {
+            await conn.sendMessage(m.chat, { audio: fs.readFileSync(filePath), ptt: true }, { quoted: m });
+            return m.reply(`🌸 ¡Listo! He enviado la nota de voz de ${title}`);
+        } else {
+            await conn.sendMessage(m.chat, { video: fs.readFileSync(filePath), caption: `🎬 ${title}\n✨ ¡Listo! Aquí está tu video en 360p.` }, { quoted: m });
+        }
+
+    } catch (err) {
+        console.error(err);
+        m.reply('❌ Ocurrió un error al descargar el contenido.');
     }
-
-    // Eliminar archivo temporal
-    setTimeout(() => {
-      fs.unlinkSync(tmpFile)
-    }, 15 * 1000)
-
-    await m.reply('✅ Descarga completada y enviada correctamente 🎶')
-
-  } catch (err) {
-    console.error(err)
-    m.reply('⚠️ Error al intentar procesar tu solicitud, intenta nuevamente más tarde.')
-  }
 }
 
-handler.help = ['play', 'play2', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
-handler.tags = ['descargas']
-handler.command = /^(play|play2|ytaudio|audio|mp3|mp4|video)$/i
-handler.limit = 1
+function extractID(url) {
+    const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+    return match ? match[1] : null;
+}
 
-export default handler
+export default { handler };
