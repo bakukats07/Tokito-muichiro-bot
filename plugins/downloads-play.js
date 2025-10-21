@@ -21,10 +21,12 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
     // Detectar tipo de comando
     if (['play', 'ytaudio', 'audio', 'mp3'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp3?query=${encodeURIComponent(text)}`
+      // ✅ API estable para audio
+      endpoint = `${apiBase}/api/download/ytmp3?url=${encodeURIComponent(text)}`
       type = 'audio'
     } else if (['play2', 'mp4', 'video'].includes(command)) {
-      endpoint = `${apiBase}/api/download/ytmp4?query=${encodeURIComponent(text)}`
+      // ✅ API estable para video
+      endpoint = `${apiBase}/api/download/ytmp4?url=${encodeURIComponent(text)}`
       type = 'video'
     } else {
       return m.reply('❓ Comando no reconocido.')
@@ -35,7 +37,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     const data = await res.json()
 
     if (!data || !data.result || !data.result.url) {
-      throw new Error('⚠️ No se pudo obtener el contenido.')
+      throw new Error('⚠️ No se pudo obtener el contenido del video/audio.')
     }
 
     const fileUrl = data.result.url
@@ -47,12 +49,12 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     const buffer = await response.arrayBuffer()
     fs.writeFileSync(tmpFile, Buffer.from(buffer))
 
-    // Enviar resultado con el ícono del bot
-    const botPfp = './media/bot.jpg' // Usa aquí el ícono del bot (ajusta la ruta si es diferente)
+    // Enviar resultado con ícono del bot
+    const botPfp = './media/bot.jpg' // asegúrate de que exista este archivo
 
     if (type === 'audio') {
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile },
+        audio: fs.readFileSync(tmpFile), // ✅ se envía desde archivo local
         mimetype: 'audio/mpeg',
         ptt: false,
         contextInfo: {
@@ -66,7 +68,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
-        video: { url: tmpFile },
+        video: fs.readFileSync(tmpFile), // ✅ se envía desde archivo local
         caption: `🎬 ${data.result.title || 'Video Descargado'}\n📥 Enviado por tu bot`,
         contextInfo: {
           externalAdReply: {
