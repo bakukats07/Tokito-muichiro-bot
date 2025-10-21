@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // Carpeta de cache
 const CACHE_DIR = path.join('./tmp/cache');
@@ -8,20 +8,20 @@ const CACHE_DIR = path.join('./tmp/cache');
 if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 // Guardar archivo en cache
-export function saveToCache(filename, buffer) {
+function saveToCache(filename, buffer) {
     const filePath = path.join(CACHE_DIR, filename);
     fs.writeFileSync(filePath, buffer);
     return filePath;
 }
 
 // Revisar si archivo ya existe en cache
-export function getFromCache(filename) {
+function getFromCache(filename) {
     const filePath = path.join(CACHE_DIR, filename);
     return fs.existsSync(filePath) ? filePath : null;
 }
 
 // Limpiar archivos viejos (>30 min)
-export function cleanCache() {
+function cleanCache() {
     const files = fs.readdirSync(CACHE_DIR);
     const now = Date.now();
     files.forEach(file => {
@@ -35,7 +35,7 @@ export function cleanCache() {
 // Limpiar cache cada 1 hora
 setInterval(cleanCache, 60 * 60 * 1000);
 
-export default {
+module.exports = {
     saveToCache,
     getFromCache,
     cleanCache,
