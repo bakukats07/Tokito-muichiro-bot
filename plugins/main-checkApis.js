@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 const apis = {
+  botcahx: 'https://api.botcahx.biz.id',
   delirius: 'https://api.delirius.store',
   vreden: 'https://api.vreden.me',
   yupra: 'https://api.yupra.my.id',
