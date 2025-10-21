@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
-import { checkActiveAPI } from './plugins/main-checkApis.js'
+import { checkActiveAPI } from '../main-checkApis.js'
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también con un link de YouTube.`)
