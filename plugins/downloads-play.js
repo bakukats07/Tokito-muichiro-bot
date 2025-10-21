@@ -1,8 +1,8 @@
-import fetch from 'node-fetch';
-import yts from 'yt-search';
-import fs from 'fs';
-import path from 'path';
-import cacheManager from '../tmp/cacheManager.js'; // ruta correcta al cache manager
+const fetch = require('node-fetch');
+const yts = require('yt-search');
+const fs = require('fs');
+const path = require('path');
+const cacheManager = require('../tmp/cacheManager.js'); // ruta correcta
 
 const AUDIO_CMDS = ['play', 'ytaudio', 'audio', 'mp3'];
 const VIDEO_CMDS = ['play2', 'mp4', 'video'];
@@ -44,7 +44,7 @@ async function handler(m, { conn, command, text }) {
         }
 
         // Descargar contenido (solo highestaudio o 360p)
-        const url = info.url; // Aquí puedes integrar tu downloader real
+        const url = info.url; // Integrar downloader real si deseas
         const buffer = await fetch(url).then(res => res.arrayBuffer());
 
         const filePath = cacheManager.saveToCache(filename, Buffer.from(buffer));
@@ -67,4 +67,4 @@ function extractID(url) {
     return match ? match[1] : null;
 }
 
-export default { handler };
+module.exports = { handler };
