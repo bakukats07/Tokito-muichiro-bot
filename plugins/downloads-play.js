@@ -102,21 +102,6 @@ handler.chooseVideo = async (m, conn, number, isAudio) => {
   const results = searchResults[m.sender]
   if (!results) return m.reply('⚠️ No tienes videos para elegir.')
 
-  handler.before = async function (m, { conn }) {
-  const text = m.text?.trim()
-  const user = m.sender
-
-  if (!searchResults[user]) return
-
-  const number = parseInt(text)
-  if (isNaN(number) || number < 1 || number > 5) return
-
-  // Determina si era audio o video
-  const isAudio = true // Por defecto en !play se asume audio
-
-  await handler.chooseVideo(m, conn, number, isAudio)
-  return !0
-  }
   const index = number - 1
   if (!results[index]) return m.reply('⚠️ Número inválido.')
 
@@ -125,6 +110,23 @@ handler.chooseVideo = async (m, conn, number, isAudio) => {
 
   // Limpiar resultados del usuario
   delete searchResults[m.sender]
+}
+
+// Detecta cuando el usuario responde con un número
+handler.before = async function (m, { conn }) {
+  const text = m.text?.trim()
+  const user = m.sender
+
+  if (!searchResults[user]) return
+
+  const number = parseInt(text)
+  if (isNaN(number) || number < 1 || number > 5) return
+
+  // Determina si era audio o video (por defecto audio)
+  const isAudio = true
+
+  await handler.chooseVideo(m, conn, number, isAudio)
+  return !0
 }
 
 handler.help = ['play', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
