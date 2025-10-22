@@ -35,16 +35,16 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     await m.reply('🔎 Buscando y descargando contenido...')
 
     // Determinar tipo (audio o video)
-    const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command)
-    const endpoint = `${apiBase}?url=${encodeURIComponent(text)}`
+const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command)
+const endpoint = `${apiBase}/api/download/${isAudio ? 'ytmp3' : 'ytmp4'}?url=${encodeURIComponent(text)}`
 
-    console.log(`🌐 Usando endpoint: ${endpoint}`)
-    const res = await fetch(endpoint)
-    const data = await res.json().catch(() => null)
+console.log(`🌐 Usando endpoint: ${endpoint}`)
+const res = await fetch(endpoint)
+const data = await res.json().catch(() => null)
 
-    if (!data || !data.result || !data.result.url) {
-      throw new Error('⚠️ No se pudo obtener el contenido de la API.')
-    }
+if (!data || !data.result || !data.result.url) {
+  throw new Error('⚠️ No se pudo obtener el contenido de la API.')
+}
 
     const fileUrl = data.result.url
     const ext = isAudio ? '.mp3' : '.mp4'
