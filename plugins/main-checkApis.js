@@ -2,98 +2,76 @@ import fetch from 'node-fetch'
 import fs from 'fs'
 import path from 'path'
 
-/* ════════════════════════════════════════
-   🌐 Lista de APIs disponibles
-   (puedes agregar o quitar según necesites)
-   ════════════════════════════════════════ */
+/*
+ 🔥 Archivo actualizado: main-checkApis.js
+ ▪ Verifica automáticamente las APIs disponibles.
+ ▪ Guarda la API activa en /plugins/tmp/active_api.json.
+ ▪ Compatible con el comando downloads-play.js.
+*/
+
 const apis = {
-  botcahx: 'https://api.botcahx.biz.id',
-  delirius: 'https://api.delirius.store',
-  vreden: 'https://api.vreden.me',
-  yupra: 'https://api.yupra.my.id',
-  lumin: 'https://luminai.my.id/api',
+  violetics: 'https://api.violetics.pw',
   hiroshi: 'https://hiroshiapi.vercel.app',
-  zenz: 'https://api.zenzapis.xyz'
+  lolhuman: 'https://api.lolhuman.xyz',
+  zenz: 'https://api.zenzapis.xyz',
+  delirius: 'https://api.delirius.store',
+  yupra: 'https://api.yupra.my.id',
+  vreden: 'https://api.vreden.me',
 }
 
-/* Endpoints comunes que usaremos para testear */
-const endpoints = [
-  'api/download/ytmp3',
-  'api/downloader/ytmp3',
-  'api/ytdl',
-  'downloader/yt1'
-]
-
-/* Carpeta y archivo para cachear la API activa */
 const tmpDir = path.join(process.cwd(), 'plugins', 'tmp')
 const cacheFile = path.join(tmpDir, 'active_api.json')
 
-/**
- * 🧠 Lee el archivo active_api.json si existe y sigue siendo válido
- */
-function loadActiveAPI() {
-  if (fs.existsSync(cacheFile)) {
-    try {
+// 🔍 Función principal: detectar API activa
+export async function checkActiveAPI() {
+  try {
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+
+    // Si hay una API guardada y tiene menos de 5 minutos, úsala directamente
+    if (fs.existsSync(cacheFile)) {
       const cache = JSON.parse(fs.readFileSync(cacheFile))
       const diff = Date.now() - cache.timestamp
       if (diff < 5 * 60 * 1000 && cache.url) {
-        console.log(`✅ Usando API activa en caché: ${cache.name} (${cache.url})`)
-        return cache
-      } else {
-        console.log('⚠️ Cache vencido, buscando nueva API...')
+        console.log(`✅ Usando API guardada: ${cache.name} (${cache.url})`)
+        return cache.url
       }
-    } catch {
-      console.log('⚠️ Error leyendo active_api.json, se creará nuevo.')
     }
-  }
-  return null
-}
 
-/**
- * 💾 Guarda la API activa en el archivo JSON
- */
-function saveActiveAPI(name, url) {
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
-  const data = { name, url, timestamp: Date.now() }
-  fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
-  console.log(`💾 API activa guardada: ${name} → ${url}`)
-}
+    console.log('🔎 Buscando API activa...')
 
-/**
- * 🔍 Verifica cuál API está activa y la guarda
- */
-export async function checkActiveAPI() {
-  try {
-    // Intentar usar la API guardada
-    const cached = loadActiveAPI()
-    if (cached) return cached.url
-
-    console.log('🔎 Buscando una API funcional...')
-
-    const testUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    // Endpoints comunes donde suelen estar los convertidores de YouTube
+    const pathsToTry = [
+      '/api/youtube-mp3',
+      '/api/ytdl/audio',
+      '/api/ytmp3',
+      '/api/yt/audio',
+      '/api/ytaudio'
+    ]
 
     for (const [name, baseUrl] of Object.entries(apis)) {
-      for (const ep of endpoints) {
-        const fullUrl = `${baseUrl}/${ep}?url=${encodeURIComponent(testUrl)}`
+      for (const pathSuffix of pathsToTry) {
+        const testUrl = `${baseUrl}${pathSuffix}?url=https://youtu.be/dQw4w9WgXcQ`
         try {
           const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 6000)
-          const res = await fetch(fullUrl, { method: 'GET', signal: controller.signal })
+          const timeout = setTimeout(() => controller.abort(), 4000)
+
+          const res = await fetch(testUrl, { method: 'GET', signal: controller.signal })
           clearTimeout(timeout)
 
           if (res.ok) {
             const text = await res.text()
-            if (text.includes('mp3') || text.includes('download') || text.includes('url')) {
-              console.log(`✅ ${name} responde correctamente → ${baseUrl}/${ep}`)
-              saveActiveAPI(name, `${baseUrl}/${ep}`)
-              return `${baseUrl}/${ep}`
+            if (text.includes('result') || text.includes('url') || text.includes('title')) {
+              console.log(`✅ API activa: ${name} (${baseUrl}) [ruta: ${pathSuffix}]`)
+
+              const data = { name, url: baseUrl, path: pathSuffix, timestamp: Date.now() }
+              fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
+              return baseUrl
             }
           }
         } catch {
-          // Ignorar errores de timeout o red
+          console.log(`❌ ${name}${pathSuffix} no respondió`)
         }
       }
-      console.log(`❌ ${name} no tiene endpoints válidos.`)
     }
 
     console.log('⚠️ Ninguna API respondió correctamente.')
@@ -104,24 +82,7 @@ export async function checkActiveAPI() {
   }
 }
 
-/**
- * 🧽 Limpia manualmente el caché de API activa
- */
-export function clearActiveAPI() {
-  try {
-    if (fs.existsSync(cacheFile)) {
-      fs.unlinkSync(cacheFile)
-      console.log('🧹 Cache de active_api.json eliminado.')
-    } else {
-      console.log('ℹ️ No hay caché guardado actualmente.')
-    }
-  } catch (err) {
-    console.error('❌ Error al eliminar caché:', err)
-  }
-}
-
-/* Ejecutar directamente si se corre manualmente con "node plugins/main-checkApis.js" */
+// Ejecutar directamente si se corre con “node main-checkApis.js”
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🧩 Verificando APIs manualmente...')
   checkActiveAPI()
-  }
+                }
