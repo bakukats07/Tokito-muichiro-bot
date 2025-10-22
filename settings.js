@@ -53,32 +53,35 @@ ch1: '120363401404146384@newsletter'
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.APIs = {
-  delirius: { 
-    url: 'https://api.delirius.store', 
-    key: null 
+  violetics: {
+    url: 'https://api.violetics.pw',
+    key: 'free'
   },
-  vreden: { 
-    url: 'https://api.vreden.me', 
-    key: null 
+  hiroshi: {
+    url: 'https://hiroshiapi.vercel.app',
+    key: null
   },
-  yupra: { 
-    url: 'https://api.yupra.my.id', 
-    key: null 
+  lolhuman: {
+    url: 'https://api.lolhuman.xyz',
+    key: 'free'
   },
-  lumin: { 
-    url: 'https://luminai.my.id/api', 
-    key: null 
-  },
-  hiroshi: { 
-    url: 'https://hiroshiapi.vercel.app', 
-    key: null 
-  },
-  zenz: { 
-    url: 'https://api.zenzapis.xyz', 
+  zenz: {
+    url: 'https://api.zenzapis.xyz',
     key: 'TU_API_KEY_AQUI'
+  },
+  delirius: {
+    url: 'https://api.delirius.store',
+    key: null
+  },
+  yupra: {
+    url: 'https://api.yupra.my.id',
+    key: null
+  },
+  vreden: {
+    url: 'https://api.vreden.me',
+    key: null
   }
-  }
-
+}
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 let file = fileURLToPath(import.meta.url)
