@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // ✅ Importar módulo de APIs con ruta segura (Termux compatible)
-const mainApisPath = pathToFileURL(path.join(__dirname, '../main-checkApis.js')).href
+const mainApisPath = pathToFileURL(path.join(__dirname, './main-checkApis.js')).href
 const { checkActiveAPI } = await import(mainApisPath)
 
 const tmpDir = path.join(__dirname, 'tmp')
