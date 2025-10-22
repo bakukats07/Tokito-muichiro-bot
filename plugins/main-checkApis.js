@@ -2,75 +2,52 @@ import fetch from 'node-fetch'
 import fs from 'fs'
 import path from 'path'
 
-/*
- 🔥 Archivo actualizado: main-checkApis.js
- ▪ Verifica automáticamente las APIs disponibles.
- ▪ Guarda la API activa en /plugins/tmp/active_api.json.
- ▪ Compatible con el comando downloads-play.js.
-*/
+// 🔑 Agrega aquí tu propia key de RapidAPI (entre comillas)
+const RAPIDAPI_KEY = '82fd1691b8mshd09070ae556cdddp1cb6e2jsnf029e65d5a97'
 
+// 📡 Endpoints disponibles (solo uno activo de RapidAPI en este caso)
 const apis = {
-  violetics: 'https://api.violetics.pw',
-  hiroshi: 'https://hiroshiapi.vercel.app',
-  lolhuman: 'https://api.lolhuman.xyz',
-  zenz: 'https://api.zenzapis.xyz',
-  delirius: 'https://api.delirius.store',
-  yupra: 'https://api.yupra.my.id',
-  vreden: 'https://api.vreden.me',
+  youtubeMedia: {
+    url: 'https://youtube-media-downloader.p.rapidapi.com/v2/video/details',
+    headers: {
+      'X-RapidAPI-Key': RAPIDAPI_KEY,
+      'X-RapidAPI-Host': 'youtube-media-downloader.p.rapidapi.com'
+    }
+  }
 }
 
+// 📁 Rutas para caché temporal
 const tmpDir = path.join(process.cwd(), 'plugins', 'tmp')
 const cacheFile = path.join(tmpDir, 'active_api.json')
 
-// 🔍 Función principal: detectar API activa
+// 🧠 Verifica si la API responde correctamente
 export async function checkActiveAPI() {
   try {
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
-    // Si hay una API guardada y tiene menos de 5 minutos, úsala directamente
+    // Usa cache si existe y no han pasado 10 minutos
     if (fs.existsSync(cacheFile)) {
       const cache = JSON.parse(fs.readFileSync(cacheFile))
       const diff = Date.now() - cache.timestamp
-      if (diff < 5 * 60 * 1000 && cache.url) {
-        console.log(`✅ Usando API guardada: ${cache.name} (${cache.url})`)
+      if (diff < 10 * 60 * 1000 && cache.url) {
+        console.log(`✅ Usando API guardada: ${cache.name}`)
         return cache.url
       }
     }
 
-    console.log('🔎 Buscando API activa...')
+    console.log('🔍 Verificando API activa...')
 
-    // Endpoints comunes donde suelen estar los convertidores de YouTube
-    const pathsToTry = [
-      '/api/youtube-mp3',
-      '/api/ytdl/audio',
-      '/api/ytmp3',
-      '/api/yt/audio',
-      '/api/ytaudio'
-    ]
-
-    for (const [name, baseUrl] of Object.entries(apis)) {
-      for (const pathSuffix of pathsToTry) {
-        const testUrl = `${baseUrl}${pathSuffix}?url=https://youtu.be/dQw4w9WgXcQ`
-        try {
-          const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 4000)
-
-          const res = await fetch(testUrl, { method: 'GET', signal: controller.signal })
-          clearTimeout(timeout)
-
-          if (res.ok) {
-            const text = await res.text()
-            if (text.includes('result') || text.includes('url') || text.includes('title')) {
-              console.log(`✅ API activa: ${name} (${baseUrl}) [ruta: ${pathSuffix}]`)
-
-              const data = { name, url: baseUrl, path: pathSuffix, timestamp: Date.now() }
-              fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
-              return baseUrl
-            }
-          }
-        } catch {
-          console.log(`❌ ${name}${pathSuffix} no respondió`)
+    for (const [name, { url, headers }] of Object.entries(apis)) {
+      try {
+        const res = await fetch(`${url}?videoId=dQw4w9WgXcQ`, { headers })
+        if (res.ok) {
+          console.log(`✅ API activa: ${name}`)
+          const data = { name, url, headers, timestamp: Date.now() }
+          fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
+          return url
         }
+      } catch {
+        console.log(`❌ ${name} no respondió.`)
       }
     }
 
@@ -82,7 +59,7 @@ export async function checkActiveAPI() {
   }
 }
 
-// Ejecutar directamente si se corre con “node main-checkApis.js”
+// ▶️ Ejecutar manualmente con “node main-checkApis.js”
 if (import.meta.url === `file://${process.argv[1]}`) {
   checkActiveAPI()
-                }
+         }
