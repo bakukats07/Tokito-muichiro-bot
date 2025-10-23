@@ -55,7 +55,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// 🔽 Función para descargar y enviar audio o video (versión ligera)
+// 🔽 Función para descargar y enviar audio o video (versión ligera y más rápida)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     // Primero obtenemos info del video (para validar disponibilidad)
@@ -68,22 +68,24 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
     const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
-    const ext = isAudio ? '.mp3' : '.mp4'
+    const ext = isAudio ? '.m4a' : '.mp4' // ⚡ usa m4a más rápido y ligero
     const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-    // Construir el comando yt-dlp
+    // ⚡ Comando más rápido (sin reconvertir a mp3)
     const cmd = isAudio
-      ? `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --audio-quality 192K -o "${tmpFile}" "${url}"`
+      ? `yt-dlp -f bestaudio -o "${tmpFile}" "${url}"`
       : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpFile}" "${url}"`
+
+    // Mensaje previo para mostrar progreso
+    await m.reply('⏬ Descargando y preparando tu archivo, espera un momento...')
 
     await execPromise(cmd)
 
     const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
     if (isAudio) {
-      // 👇 Aquí se agrega ptt:true y filename personalizado
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile, fileName: 'TokitoBot_Audio.mp3' }, // ← nombre de archivo
+        audio: { url: tmpFile }, // 🔹 se quitó fileName personalizado
         mimetype: 'audio/mpeg',
         ptt: true, // ← ícono del micrófono
         contextInfo: {
