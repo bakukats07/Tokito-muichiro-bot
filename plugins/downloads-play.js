@@ -3,11 +3,9 @@ import path from 'path'
 import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
-import { pipeline } from 'stream'
 import { exec } from 'child_process'
-import { ytDlpExec } from 'yt-dlp-exec'
 
-const streamPipeline = promisify(pipeline)
+const execPromise = promisify(exec)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const tmpDir = path.join(__dirname, 'tmp')
@@ -57,29 +55,28 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// 🔽 Función para descargar y enviar audio o video con yt-dlp-exec
+// 🔽 Función para descargar y enviar audio o video (versión ligera)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    const ext = isAudio ? '.mp3' : '.mp4'
+    // Primero obtenemos info del video (para validar disponibilidad)
     const infoCmd = `yt-dlp -j ${url}`
-    const infoRaw = await execPromise(infoCmd)
-    const info = JSON.parse(infoRaw)
+    const { stdout } = await execPromise(infoCmd)
+    const info = JSON.parse(stdout)
 
     if (!info || info.is_private || info.age_limit || info.playability_status?.status === 'ERROR') {
       return m.reply('❌ Este video no está disponible o tiene restricciones en YouTube.')
     }
 
     const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
+    const ext = isAudio ? '.mp3' : '.mp4'
     const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-    await ytDlpExec(url, {
-      output: tmpFile,
-      format: isAudio ? 'bestaudio/best' : 'bestvideo+bestaudio/best',
-      extractAudio: isAudio,
-      audioFormat: isAudio ? 'mp3' : undefined,
-      audioQuality: '192K',
-      quiet: true,
-    })
+    // Construir el comando yt-dlp
+    const cmd = isAudio
+      ? `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --audio-quality 192K -o "${tmpFile}" "${url}"`
+      : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpFile}" "${url}"`
+
+    await execPromise(cmd)
 
     const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
@@ -127,16 +124,6 @@ async function downloadVideo(url, isAudio, m, conn) {
       return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
     }
   }
-}
-
-// Promesa para ejecutar comandos shell
-function execPromise(cmd) {
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) reject(stderr || error.message)
-      else resolve(stdout)
-    })
-  })
 }
 
 // 🧠 Maneja cuando el usuario responde con un número
