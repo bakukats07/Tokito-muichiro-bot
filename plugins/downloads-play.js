@@ -29,7 +29,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let url
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
     if (!ytRegex.test(text)) {
-      // Buscar los 5 primeros videos válidos (no directos, no shorts)
       const search = await ytSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
@@ -55,10 +54,9 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// 🔽 Función para descargar y enviar audio o video (versión ligera y más rápida)
+// 🔽 Función para descargar y enviar audio o video (versión estable compatible con WhatsApp)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    // Primero obtenemos info del video (para validar disponibilidad)
     const infoCmd = `yt-dlp -j ${url}`
     const { stdout } = await execPromise(infoCmd)
     const info = JSON.parse(stdout)
@@ -68,16 +66,15 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
     const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
-    const ext = isAudio ? '.m4a' : '.mp4' // ⚡ usa m4a más rápido y ligero
+    const ext = isAudio ? '.mp3' : '.mp4'
     const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-    // ⚡ Comando más rápido (sin reconvertir a mp3)
+    // ⚙️ Este comando convierte siempre a mp3 completo compatible
     const cmd = isAudio
-      ? `yt-dlp -f bestaudio -o "${tmpFile}" "${url}"`
+      ? `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --audio-quality 192K --embed-metadata -o "${tmpFile}" "${url}"`
       : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpFile}" "${url}"`
 
-    // Mensaje previo para mostrar progreso
-    await m.reply('⏬ Descargando y preparando tu archivo, espera un momento...')
+    await m.reply('⏬ Descargando y preparando tu archivo...')
 
     await execPromise(cmd)
 
@@ -85,9 +82,9 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     if (isAudio) {
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile }, // 🔹 se quitó fileName personalizado
+        audio: { url: tmpFile },
         mimetype: 'audio/mpeg',
-        ptt: true, // ← ícono del micrófono
+        ptt: true,
         contextInfo: {
           externalAdReply: {
             title: `🎧 ${title}`,
@@ -112,7 +109,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       }, { quoted: m })
     }
 
-    // Borra archivo temporal después de 15s
+    // 🧹 Borra archivo temporal después de 15s
     setTimeout(() => {
       if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
     }, 15000)
