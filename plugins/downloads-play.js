@@ -134,4 +134,6 @@ handler.tags = ['descargas']
 handler.command = /^(play|ytaudio|audio|mp3|mp4|video)$/i
 handler.limit = 1
 
+handler.before = before
+
 export default handler
