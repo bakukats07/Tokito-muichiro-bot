@@ -29,7 +29,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let url
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
     if (!ytRegex.test(text)) {
-      // Buscar los 5 primeros videos válidos (no directos, no shorts)
       const search = await ytSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
@@ -55,22 +54,15 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// 🔽 Función para descargar y enviar audio o video
+// Función para descargar y enviar audio/video
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    // 🟢 Actualización ligera en segundo plano de yt-dlp (sin bloquear)
-    await execPromise('yt-dlp -U').catch(() => {})
+    await execPromise('yt-dlp -U').catch(() => {}) // Actualización ligera
 
-    // Primero obtenemos info del video (para validar disponibilidad)
     const infoCmd = `yt-dlp -j ${url}`
     const { stdout: infoStdout } = await execPromise(infoCmd).catch(e => ({ stdout: '', stderr: String(e) }))
     let info
-    try {
-      info = infoStdout ? JSON.parse(infoStdout) : null
-    } catch (e) {
-      console.error('⚠️ No se pudo parsear yt-dlp -j output:', e, 'raw:', infoStdout)
-      info = null
-    }
+    try { info = infoStdout ? JSON.parse(infoStdout) : null } catch { info = null }
 
     if (!info || info.is_private || info.age_limit || info.playability_status?.status === 'ERROR') {
       return m.reply('❌ Este video no está disponible o tiene restricciones en YouTube.')
@@ -97,55 +89,21 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     if (isAudio) {
       const candidates = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
-      let realInput = candidates.map(f => path.join(tmpDir, f)).find(p => /\.(m4a|webm|mp4|mkv|opus|aac|flac|temp)$/i.test(p)) || `${tmpInput}`
-
+      let realInput = candidates.map(f => path.join(tmpDir, f)).find(p => /\.(m4a|webm|mp4|mkv|opus|aac|flac|temp)$/i.test(p)) || tmpInput
       if (!fs.existsSync(realInput)) realInput = tmpInput
 
-      // ⚙️ ffmpeg optimizado para velocidad y compatibilidad WhatsApp
       const ffmpegCmd = `ffmpeg -y -i "${realInput}" -vn -ac 2 -ar 48000 -c:a libopus -b:a 96000 -vbr on -compression_level 10 "${tmpOgg}"`
-
       try {
         const ff = await execPromise(ffmpegCmd)
         if (ff.stderr) console.warn('ffmpeg stderr:', ff.stderr)
       } catch (errFf) {
         console.error('❌ Error en ffmpeg:', errFf)
-        const tmpMp3 = `${tmpBase}.mp3`
-        try {
-          await execPromise(`ffmpeg -y -i "${realInput}" -vn -ar 44100 -ac 2 -b:a 128k "${tmpMp3}"`)
-          const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
-          await conn.sendMessage(m.chat, {
-            audio: { url: tmpMp3 },
-            mimetype: 'audio/mpeg',
-            ptt: true,
-            contextInfo: {
-              externalAdReply: {
-                title: `🎧 ${title}`,
-                body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
-                thumbnail,
-                sourceUrl: url
-              }
-            }
-          }, { quoted: m })
-          setTimeout(() => {
-            if (fs.existsSync(tmpMp3)) fs.unlinkSync(tmpMp3)
-            if (fs.existsSync(realInput)) try { fs.unlinkSync(realInput) } catch {}
-          }, 15000)
-          return
-        } catch (errMp3) {
-          console.error('❌ Fallback mp3 también falló:', errMp3)
-          return m.reply('⚠️ No se pudo procesar el audio. Intenta otro video por favor.')
-        }
+        return m.reply('⚠️ No se pudo convertir el audio correctamente. Intenta otro video.')
       }
 
-      // 🧱 Verificación adicional para evitar audios vacíos
-      if (!fs.existsSync(tmpOgg)) {
-        console.error('❌ Archivo OGG no encontrado tras ffmpeg')
-        return m.reply('⚠️ Hubo un problema convirtiendo el audio.')
-      }
-      const stats = fs.statSync(tmpOgg)
-      if (stats.size < 50000) { // 50 KB mínimo
-        console.warn('⚠️ Archivo OGG muy pequeño, posible error de conversión')
-        return m.reply('⚠️ El audio se descargó pero parece vacío o dañado. Intenta con otro video.')
+      if (!fs.existsSync(tmpOgg) || fs.statSync(tmpOgg).size < 50000) {
+        console.warn('⚠️ Archivo OGG muy pequeño o corrupto')
+        return m.reply('⚠️ El audio parece vacío o dañado. Intenta con otro video.')
       }
 
       const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
@@ -171,13 +129,10 @@ async function downloadVideo(url, isAudio, m, conn) {
       return
     }
 
-    // Si es video
     if (!isAudio) {
       const realVideoFile = `${tmpInput}.mp4`
       const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
-      if (!fs.existsSync(realVideoFile)) {
-        console.warn('⚠️ Archivo de video no encontrado en salida esperada:', realVideoFile)
-      }
+      if (!fs.existsSync(realVideoFile)) console.warn('⚠️ Archivo de video no encontrado:', realVideoFile)
 
       await conn.sendMessage(m.chat, {
         video: { url: realVideoFile },
@@ -198,30 +153,20 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
   } catch (err) {
-    if (err?.message?.includes('private')) {
-      return m.reply('🔒 Este video es privado y no se puede descargar.')
-    } else if (err?.message?.includes('unavailable')) {
-      return m.reply('❌ Este video no está disponible o tiene restricciones regionales / de edad.')
-    } else {
-      console.error('⚠️ Error inesperado en downloadVideo:', err)
-      return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
-    }
+    console.error('⚠️ Error inesperado en downloadVideo:', err)
+    return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
   }
 }
 
 handler.before = async function (m, { conn }) {
   const text = m.text?.trim()
   const user = m.sender
-
   if (!searchResults[user]) return
   const data = searchResults[user]
   const number = parseInt(text)
-
   if (isNaN(number) || number < 1 || number > data.videos.length) return
-
   const video = data.videos[number - 1]
   await downloadVideo(video.url, data.isAudio, m, conn)
-
   delete searchResults[user]
   return !0
 }
