@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import ytdl from '@distube/ytdl-core'
 import ytSearch from 'yt-search'
+import { Innertube } from 'youtubei.js'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
@@ -18,6 +18,8 @@ const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 // Almacena resultados de búsqueda por usuario
 const searchResults = {}
 
+const youtube = await Innertube.create()
+
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
     return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también puedes pegar un link de YouTube.`)
@@ -28,7 +30,8 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
   try {
     let url
-    if (!ytdl.validateURL(text)) {
+    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
+    if (!ytRegex.test(text)) {
       // Buscar los 5 primeros videos
       const search = await ytSearch(text)
       const videos = search.videos?.length ? search.videos : search.all || []
@@ -45,7 +48,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
       return m.reply(msg)
     } else {
-      // Si es un link directo
       url = text
       await downloadVideo(url, isAudio, m, conn)
     }
@@ -57,15 +59,17 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
 // 🔽 Función para descargar y enviar audio o video
 async function downloadVideo(url, isAudio, m, conn) {
-  const info = await ytdl.getInfo(url)
-  const title = info.videoDetails.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
+  const video = await youtube.getInfo(url)
+  const title = video.basic_info?.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
   const ext = isAudio ? '.mp3' : '.mp4'
   const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-  await streamPipeline(
-    ytdl(url, isAudio ? { filter: 'audioonly' } : { quality: 'highestvideo' }),
-    fs.createWriteStream(tmpFile)
-  )
+  const stream = await video.download({
+    quality: isAudio ? 'best' : 'best',
+    type: isAudio ? 'audio' : 'video'
+  })
+
+  await streamPipeline(stream, fs.createWriteStream(tmpFile))
 
   const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
@@ -77,7 +81,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       contextInfo: {
         externalAdReply: {
           title: `🎧 ${title}`,
-          body: `Descargado con ytdl-core${CREATOR_SIGNATURE}`,
+          body: `Descargado con youtubei.js${CREATOR_SIGNATURE}`,
           thumbnail,
           sourceUrl: url
         }
@@ -86,7 +90,7 @@ async function downloadVideo(url, isAudio, m, conn) {
   } else {
     await conn.sendMessage(m.chat, {
       video: { url: tmpFile },
-      caption: `🎬 ${title}\nDescargado con ytdl-core${CREATOR_SIGNATURE}`,
+      caption: `🎬 ${title}\nDescargado con youtubei.js${CREATOR_SIGNATURE}`,
       contextInfo: {
         externalAdReply: {
           title,
