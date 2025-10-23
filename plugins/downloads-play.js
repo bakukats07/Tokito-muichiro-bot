@@ -19,7 +19,9 @@ const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 const searchResults = {}
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
-  if (!args[0]) return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO con un link de YouTube.`)
+  if (!args[0]) {
+    return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también puedes pegar un link de YouTube.`)
+  }
 
   const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command)
   const text = args.join(' ')
@@ -29,33 +31,36 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     if (!ytdl.validateURL(text)) {
       // Buscar los 5 primeros videos
       const search = await ytSearch(text)
-      if (!search.videos || search.videos.length === 0) return m.reply('⚠️ No se encontró ningún video.')
+      const videos = search.videos?.length ? search.videos : search.all || []
 
-      const top5 = search.videos.slice(0, 5)
-      searchResults[m.sender] = top5
+      if (!videos.length) return m.reply('⚠️ No se encontró ningún video.')
 
-      let msg = '🎬 Selecciona el video que quieres descargar respondiendo con el número:\n\n'
+      const top5 = videos.slice(0, 5)
+      searchResults[m.sender] = { videos: top5, isAudio }
+
+      let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
       top5.forEach((vid, i) => {
-        msg += `${i + 1}. ${vid.title} (${vid.timestamp})\n`
+        msg += `*${i + 1}.* ${vid.title}\n📺 ${vid.author.name}  ⏱️ ${vid.timestamp}\n\n`
       })
 
       return m.reply(msg)
     } else {
+      // Si es un link directo
       url = text
       await downloadVideo(url, isAudio, m, conn)
     }
   } catch (err) {
     console.error('❌ Error en downloads-play:', err)
-    m.reply('⚠️ Hubo un error al procesar la descarga.')
+    m.reply('⚠️ Hubo un error al procesar la descarga. Intenta con otro video.')
   }
 }
 
-// Función auxiliar para descargar y enviar
+// 🔽 Función para descargar y enviar audio o video
 async function downloadVideo(url, isAudio, m, conn) {
   const info = await ytdl.getInfo(url)
-  const title = info.videoDetails.title || 'VideoDescargado'
+  const title = info.videoDetails.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
   const ext = isAudio ? '.mp3' : '.mp4'
-  const tmpFile = path.join(tmpDir, `file_${Date.now()}${ext}`)
+  const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
   await streamPipeline(
     ytdl(url, isAudio ? { filter: 'audioonly' } : { quality: 'highestvideo' }),
@@ -93,39 +98,27 @@ async function downloadVideo(url, isAudio, m, conn) {
     }, { quoted: m })
   }
 
-  // Borra archivo temporal después de 10s
-  setTimeout(() => { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile) }, 10000)
+  // Borra archivo temporal después de 15s
+  setTimeout(() => {
+    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+  }, 15000)
 }
 
-// Manejador de elección de número
-handler.chooseVideo = async (m, conn, number, isAudio) => {
-  const results = searchResults[m.sender]
-  if (!results) return m.reply('⚠️ No tienes videos para elegir.')
-
-  const index = number - 1
-  if (!results[index]) return m.reply('⚠️ Número inválido.')
-
-  const video = results[index]
-  await downloadVideo(video.url, isAudio, m, conn)
-
-  // Limpiar resultados del usuario
-  delete searchResults[m.sender]
-}
-
-// Detecta cuando el usuario responde con un número
+// 🧠 Maneja cuando el usuario responde con un número
 handler.before = async function (m, { conn }) {
   const text = m.text?.trim()
   const user = m.sender
 
   if (!searchResults[user]) return
-
+  const data = searchResults[user]
   const number = parseInt(text)
-  if (isNaN(number) || number < 1 || number > 5) return
 
-  // Determina si era audio o video (por defecto audio)
-  const isAudio = true
+  if (isNaN(number) || number < 1 || number > data.videos.length) return
 
-  await handler.chooseVideo(m, conn, number, isAudio)
+  const video = data.videos[number - 1]
+  await downloadVideo(video.url, data.isAudio, m, conn)
+
+  delete searchResults[user]
   return !0
 }
 
@@ -133,7 +126,5 @@ handler.help = ['play', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
 handler.tags = ['descargas']
 handler.command = /^(play|ytaudio|audio|mp3|mp4|video)$/i
 handler.limit = 1
-
-handler.before = before
 
 export default handler
