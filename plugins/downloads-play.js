@@ -81,10 +81,11 @@ async function downloadVideo(url, isAudio, m, conn) {
     const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
     if (isAudio) {
+      // 👇 Aquí se agrega ptt:true y filename personalizado
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile },
+        audio: { url: tmpFile, fileName: 'TokitoBot_Audio.mp3' }, // ← nombre de archivo
         mimetype: 'audio/mpeg',
-        ptt: false,
+        ptt: true, // ← ícono del micrófono
         contextInfo: {
           externalAdReply: {
             title: `🎧 ${title}`,
