@@ -32,11 +32,12 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let url
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
     if (!ytRegex.test(text)) {
-      // Buscar los 5 primeros videos
+      // Buscar los 5 primeros videos válidos (no directos, no shorts)
       const search = await ytSearch(text)
-      const videos = search.videos?.length ? search.videos : search.all || []
+      const videos = (search.videos?.length ? search.videos : search.all || [])
+        .filter(v => !v.isLive && v.seconds > 0)
 
-      if (!videos.length) return m.reply('⚠️ No se encontró ningún video.')
+      if (!videos.length) return m.reply('⚠️ No se encontró ningún video válido para descargar.')
 
       const top5 = videos.slice(0, 5)
       searchResults[m.sender] = { videos: top5, isAudio }
@@ -59,53 +60,72 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
 // 🔽 Función para descargar y enviar audio o video
 async function downloadVideo(url, isAudio, m, conn) {
-  const video = await youtube.getInfo(url)
-  const title = video.basic_info?.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
-  const ext = isAudio ? '.mp3' : '.mp4'
-  const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
+  try {
+    const video = await youtube.getInfo(url)
 
-  const stream = await video.download({
-    quality: isAudio ? 'best' : 'best',
-    type: isAudio ? 'audio' : 'video'
-  })
+    // Verifica si el video está disponible o tiene restricciones
+    if (video?.info?.status === 'ERROR' || video?.info?.reason?.includes('unavailable')) {
+      return m.reply('❌ Este video no está disponible o tiene restricciones en YouTube.')
+    }
 
-  await streamPipeline(stream, fs.createWriteStream(tmpFile))
+    const title = video.basic_info?.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
+    const ext = isAudio ? '.mp3' : '.mp4'
+    const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-  const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
+    const stream = await video.download({
+      quality: 'best',
+      type: isAudio ? 'audio' : 'video'
+    })
 
-  if (isAudio) {
-    await conn.sendMessage(m.chat, {
-      audio: { url: tmpFile },
-      mimetype: 'audio/mpeg',
-      ptt: false,
-      contextInfo: {
-        externalAdReply: {
-          title: `🎧 ${title}`,
-          body: `Descargado con youtubei.js${CREATOR_SIGNATURE}`,
-          thumbnail,
-          sourceUrl: url
+    await streamPipeline(stream, fs.createWriteStream(tmpFile))
+
+    const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
+
+    if (isAudio) {
+      await conn.sendMessage(m.chat, {
+        audio: { url: tmpFile },
+        mimetype: 'audio/mpeg',
+        ptt: false,
+        contextInfo: {
+          externalAdReply: {
+            title: `🎧 ${title}`,
+            body: `Descargado con youtubei.js${CREATOR_SIGNATURE}`,
+            thumbnail,
+            sourceUrl: url
+          }
         }
-      }
-    }, { quoted: m })
-  } else {
-    await conn.sendMessage(m.chat, {
-      video: { url: tmpFile },
-      caption: `🎬 ${title}\nDescargado con youtubei.js${CREATOR_SIGNATURE}`,
-      contextInfo: {
-        externalAdReply: {
-          title,
-          body: `Tu bot siempre activo 🎵`,
-          thumbnail,
-          sourceUrl: url
+      }, { quoted: m })
+    } else {
+      await conn.sendMessage(m.chat, {
+        video: { url: tmpFile },
+        caption: `🎬 ${title}\nDescargado con youtubei.js${CREATOR_SIGNATURE}`,
+        contextInfo: {
+          externalAdReply: {
+            title,
+            body: `Tu bot siempre activo 🎵`,
+            thumbnail,
+            sourceUrl: url
+          }
         }
-      }
-    }, { quoted: m })
+      }, { quoted: m })
+    }
+
+    // Borra archivo temporal después de 15s
+    setTimeout(() => {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+    }, 15000)
+
+  } catch (err) {
+    // Manejo de errores específicos
+    if (err?.info?.reason?.includes('unavailable') || err?.message?.includes('unavailable')) {
+      return m.reply('❌ Este video no está disponible o tiene restricciones regionales / de edad.')
+    } else if (err?.message?.includes('private')) {
+      return m.reply('🔒 Este video es privado y no se puede descargar.')
+    } else {
+      console.error('⚠️ Error inesperado en downloadVideo:', err)
+      return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
+    }
   }
-
-  // Borra archivo temporal después de 15s
-  setTimeout(() => {
-    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
-  }, 15000)
 }
 
 // 🧠 Maneja cuando el usuario responde con un número
