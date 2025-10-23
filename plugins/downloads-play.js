@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import ytdl from 'ytdl-core'
+import ytdl from '@distube/ytdl-core'
 import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
