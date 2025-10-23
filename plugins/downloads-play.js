@@ -1,10 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import ytSearch from 'yt-search'
-import { Innertube } from 'youtubei.js'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
+import { exec } from 'child_process'
+import { ytDlpExec } from 'yt-dlp-exec'
 
 const streamPipeline = promisify(pipeline)
 const __filename = fileURLToPath(import.meta.url)
@@ -17,8 +18,6 @@ const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 
 // Almacena resultados de búsqueda por usuario
 const searchResults = {}
-
-const youtube = await Innertube.create()
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
@@ -58,26 +57,29 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// 🔽 Función para descargar y enviar audio o video
+// 🔽 Función para descargar y enviar audio o video con yt-dlp-exec
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    const video = await youtube.getInfo(url)
+    const ext = isAudio ? '.mp3' : '.mp4'
+    const infoCmd = `yt-dlp -j ${url}`
+    const infoRaw = await execPromise(infoCmd)
+    const info = JSON.parse(infoRaw)
 
-    // Verifica si el video está disponible o tiene restricciones
-    if (video?.info?.status === 'ERROR' || video?.info?.reason?.includes('unavailable')) {
+    if (!info || info.is_private || info.age_limit || info.playability_status?.status === 'ERROR') {
       return m.reply('❌ Este video no está disponible o tiene restricciones en YouTube.')
     }
 
-    const title = video.basic_info?.title?.replace(/[^\w\s]/gi, '') || 'VideoDescargado'
-    const ext = isAudio ? '.mp3' : '.mp4'
+    const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
     const tmpFile = path.join(tmpDir, `${Date.now()}_${title}${ext}`)
 
-    const stream = await video.download({
-      quality: 'best',
-      type: isAudio ? 'audio' : 'video'
+    await ytDlpExec(url, {
+      output: tmpFile,
+      format: isAudio ? 'bestaudio/best' : 'bestvideo+bestaudio/best',
+      extractAudio: isAudio,
+      audioFormat: isAudio ? 'mp3' : undefined,
+      audioQuality: '192K',
+      quiet: true,
     })
-
-    await streamPipeline(stream, fs.createWriteStream(tmpFile))
 
     const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
@@ -89,7 +91,7 @@ async function downloadVideo(url, isAudio, m, conn) {
         contextInfo: {
           externalAdReply: {
             title: `🎧 ${title}`,
-            body: `Descargado con youtubei.js${CREATOR_SIGNATURE}`,
+            body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
             thumbnail,
             sourceUrl: url
           }
@@ -98,7 +100,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     } else {
       await conn.sendMessage(m.chat, {
         video: { url: tmpFile },
-        caption: `🎬 ${title}\nDescargado con youtubei.js${CREATOR_SIGNATURE}`,
+        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
         contextInfo: {
           externalAdReply: {
             title,
@@ -116,16 +118,25 @@ async function downloadVideo(url, isAudio, m, conn) {
     }, 15000)
 
   } catch (err) {
-    // Manejo de errores específicos
-    if (err?.info?.reason?.includes('unavailable') || err?.message?.includes('unavailable')) {
-      return m.reply('❌ Este video no está disponible o tiene restricciones regionales / de edad.')
-    } else if (err?.message?.includes('private')) {
+    if (err?.message?.includes('private')) {
       return m.reply('🔒 Este video es privado y no se puede descargar.')
+    } else if (err?.message?.includes('unavailable')) {
+      return m.reply('❌ Este video no está disponible o tiene restricciones regionales / de edad.')
     } else {
       console.error('⚠️ Error inesperado en downloadVideo:', err)
       return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
     }
   }
+}
+
+// Promesa para ejecutar comandos shell
+function execPromise(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) reject(stderr || error.message)
+      else resolve(stdout)
+    })
+  })
 }
 
 // 🧠 Maneja cuando el usuario responde con un número
