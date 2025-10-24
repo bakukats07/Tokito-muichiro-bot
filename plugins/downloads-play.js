@@ -49,21 +49,13 @@ function getExternalAdReply(title, body, thumbnail) {
   }
 }
 
-let allowedCommands = ['play', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
-
 let handler = async (m, { conn, args, command, usedPrefix }) => {
-  // ✅ Validación de comando
-  if (!allowedCommands.includes(command.toLowerCase())) {
-    return m.reply(`⚠️ El comando *${command}* no existe.\n> Usa ${usedPrefix}help para ver la lista de comandos disponibles.`)
-  }
-
   if (!args[0]) {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
   }
 
   const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command.toLowerCase())
   const text = args.join(' ')
-
   try {
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
     if (!ytRegex.test(text)) {
