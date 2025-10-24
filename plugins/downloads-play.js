@@ -2,8 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
+import { spawn } from 'child_process'
 import { promisify } from 'util'
 import { exec } from 'child_process'
+import fetch from 'node-fetch'
 
 const execPromise = promisify(exec)
 const __filename = fileURLToPath(import.meta.url)
@@ -11,47 +13,51 @@ const __dirname = path.dirname(__filename)
 const tmpDir = path.join(__dirname, 'tmp')
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
-const botPfp = path.join(__dirname, '../media/bot.jpg')
 const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 const searchResults = {}
 
-// 🧩 Autoactualiza yt-dlp en segundo plano cada 2h
+// 🧩 Autoactualiza yt-dlp cada 12 h
 setInterval(async () => {
-  try {
-    await execPromise('yt-dlp -U')
-  } catch {}
-}, 7200000)
+  try { await execPromise('yt-dlp -U') } catch {}
+}, 43200000)
+
+// 🚀 Ejecutar yt-dlp sin shell (más rápido)
+function runYtDlp(args = []) {
+  return new Promise((resolve, reject) => {
+    const ytdlp = spawn('yt-dlp', args)
+    let stderr = ''
+    ytdlp.stderr.on('data', chunk => stderr += chunk.toString())
+    ytdlp.on('close', code => {
+      if (code === 0) resolve()
+      else reject(new Error(stderr))
+    })
+  })
+}
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
-    return m.reply(`🎵 Ejemplo de uso:\n${usedPrefix + command} Despacito\nO también puedes pegar un link de YouTube.`)
+    return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
   }
 
-  const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command)
+  const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command.toLowerCase())
   const text = args.join(' ')
-
   try {
-    let url
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
     if (!ytRegex.test(text)) {
       const search = await ytSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
-
       if (!videos.length) return m.reply('⚠️ No se encontró ningún video válido para descargar.')
 
       const top5 = videos.slice(0, 5)
       searchResults[m.sender] = { videos: top5, isAudio }
-
       let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
-      top5.forEach((vid, i) => {
-        msg += `*${i + 1}.* ${vid.title}\n📺 ${vid.author.name}  ⏱️ ${vid.timestamp}\n\n`
+      top5.forEach((v, i) => {
+        msg += `*${i + 1}.* ${v.title}\n📺 ${v.author.name}  ⏱️ ${v.timestamp}\n\n`
       })
-
       return m.reply(msg)
     } else {
-      url = text
-      await downloadVideo(url, isAudio, m, conn)
+      await downloadVideo(text, isAudio, m, conn)
     }
   } catch (err) {
     console.error('❌ Error en downloads-play:', err)
@@ -59,93 +65,82 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
+// ⚙️ Descarga optimizada (usa foto de perfil del bot)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    // ⚙️ Actualiza yt-dlp solo si pasó mucho tiempo desde la última
-    execPromise('yt-dlp -U').catch(() => {})
+    const tmpBase = path.join(tmpDir, `${Date.now()}`)
+    const output = `${tmpBase}.%(ext)s`
 
-    const infoCmd = `yt-dlp -j ${url}`
-    const { stdout: infoStdout } = await execPromise(infoCmd).catch(e => ({ stdout: '', stderr: String(e) }))
-    let info
-    try { info = infoStdout ? JSON.parse(infoStdout) : null } catch { info = null }
-
-    if (!info || info.is_private || info.age_limit || info.playability_status?.status === 'ERROR') {
-      return m.reply('❌ Este video no está disponible o tiene restricciones en YouTube.')
+    // 📸 Miniatura = foto actual del bot
+    let botThumb
+    try {
+      const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
+      const res = await fetch(botPicUrl)
+      botThumb = Buffer.from(await res.arrayBuffer())
+    } catch {
+      botThumb = null
     }
 
-    const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
-    const tmpBase = path.join(tmpDir, `${Date.now()}_${title}`)
-    const tmpAudio = `${tmpBase}.opus`
-    const tmpVideo = `${tmpBase}.mp4`
+    m.reply(`🎧 *Procesando:* ${url}\n> ⏳ Esto puede tardar unos segundos...`)
 
-    // 🕓 Aviso inicial más rápido
-    m.reply(`🎧 *Procesando:* ${title}\n> ⏳ Esto puede tardar unos segundos...`)
+    const args = isAudio
+      ? ['-f', 'bestaudio[abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, '--no-warnings', '--no-progress', url]
+      : ['-f', 'bv*[height<=720]+ba/b[height<=720]', '-o', output, '--no-warnings', '--no-progress', url]
 
-    // 🚀 Descarga rápida según tipo
-    const cmd = isAudio
-      ? `yt-dlp -f bestaudio --extract-audio --audio-format opus -o "${tmpAudio}" "${url}" --no-progress`
-      : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpVideo}" "${url}" --no-progress`
+    await runYtDlp(args)
 
-    const { stderr } = await execPromise(cmd).catch(e => ({ stderr: String(e) }))
-    if (stderr) console.warn(stderr)
+    const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
+    const downloaded = files.length ? path.join(tmpDir, files[0]) : null
+    if (!downloaded) return m.reply('⚠️ No se pudo obtener el archivo descargado.')
 
-    const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
+    const title = path.basename(downloaded).replace(/\.[^/.]+$/, '')
 
     if (isAudio) {
-      if (!fs.existsSync(tmpAudio) || fs.statSync(tmpAudio).size < 10000) {
-        return m.reply('⚠️ No se pudo obtener el audio. Intenta otro video.')
-      }
-
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpAudio },
+        audio: { url: downloaded },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
           externalAdReply: {
             title: `🎧 ${title}`,
             body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
-            thumbnail,
+            thumbnail: botThumb,
             sourceUrl: url
           }
         }
       }, { quoted: m })
     } else {
-      if (!fs.existsSync(tmpVideo)) return m.reply('⚠️ No se pudo obtener el video.')
       await conn.sendMessage(m.chat, {
-        video: { url: tmpVideo },
+        video: { url: downloaded },
         caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
         contextInfo: {
           externalAdReply: {
             title,
             body: 'Tu bot siempre activo 🎵',
-            thumbnail,
+            thumbnail: botThumb,
             sourceUrl: url
           }
         }
       }, { quoted: m })
     }
 
-    // 🧹 Limpieza rápida
-    setTimeout(() => {
-      try { fs.unlinkSync(isAudio ? tmpAudio : tmpVideo) } catch {}
-    }, 10000)
-
+    setTimeout(() => { try { fs.unlinkSync(downloaded) } catch {} }, 10000)
   } catch (err) {
     console.error('⚠️ Error inesperado:', err)
     m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
   }
 }
 
-// 🧠 Manejador de selección
+// 🧠 Selección de resultado
 handler.before = async function (m, { conn }) {
   const text = m.text?.trim()
   const user = m.sender
   if (!searchResults[user]) return
   const data = searchResults[user]
-  const number = parseInt(text)
-  if (isNaN(number) || number < 1 || number > data.videos.length) return
-  const video = data.videos[number - 1]
-  await downloadVideo(video.url, data.isAudio, m, conn)
+  const num = parseInt(text)
+  if (isNaN(num) || num < 1 || num > data.videos.length) return
+  const vid = data.videos[num - 1]
+  await downloadVideo(vid.url, data.isAudio, m, conn)
   delete searchResults[user]
   return !0
 }
