@@ -149,7 +149,7 @@ async function downloadVideo(url, isAudio, m, conn) {
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
-        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
+        caption: `🎬 ${title}\nVideo Descargado: MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`,
         contextInfo: { externalAdReply: getExternalAdReply(title, 'Tu bot siempre activo 🎵', botThumb) }
       }, { quoted: m })
 
