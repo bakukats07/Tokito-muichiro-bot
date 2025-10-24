@@ -34,7 +34,7 @@ function runYtDlp(args = [], useStream = false) {
         else reject(new Error(stderr))
       })
     } else {
-      resolve(ytdlp) // Devuelve el proceso directamente para usar su stdout
+      resolve(ytdlp)
     }
   })
 }
@@ -66,11 +66,21 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
       const top5 = videos.slice(0, 5)
       searchResults[m.sender] = { videos: top5, isAudio }
+
       let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
       top5.forEach((v, i) => {
         msg += `*${i + 1}.* ${v.title}\n📺 ${v.author.name}  ⏱️ ${v.timestamp}\n\n`
       })
-      return m.reply(msg)
+      m.reply(msg)
+
+      // ⏱️ Tiempo máximo de respuesta: 10 segundos
+      setTimeout(() => {
+        if (searchResults[m.sender]) {
+          delete searchResults[m.sender]
+          conn.sendMessage(m.chat, { text: '⌛ Tiempo de selección expirado. Por favor, usa el comando nuevamente.' }, { quoted: m })
+        }
+      }, 10000)
+
     } else {
       await downloadVideo(text, isAudio, m, conn)
     }
@@ -102,7 +112,6 @@ async function downloadVideo(url, isAudio, m, conn) {
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
     if (isAudio) {
-      // 🔊 Audio como PTT
       const args = [
         ...baseArgs,
         '-f', 'bestaudio[ext=webm][abr<=128]',
@@ -125,7 +134,6 @@ async function downloadVideo(url, isAudio, m, conn) {
       setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
 
     } else {
-      // 🎬 Video compatible WhatsApp
       const args = [
         ...baseArgs,
         '-f', 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/mp4',
