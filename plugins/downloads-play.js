@@ -94,19 +94,23 @@ async function downloadVideo(url, isAudio, m, conn) {
     // 🧠 Parámetros yt-dlp optimizados
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
+    // 🔧 AUDIO: corrección completa (ya no se daña)
     if (isAudio) {
-      // 🎧 Modo stream directo de audio (sin escribir en disco)
       const args = [
         ...baseArgs,
         '-f', 'bestaudio[ext=webm][abr<=128]',
         '--extract-audio', '--audio-format', 'opus',
-        '-o', '-', // salida por stdout
+        '-o', `${tmpBase}.opus`,
         url
       ]
-      const ytdlp = await runYtDlp(args, true)
+
+      await runYtDlp(args)
+
+      const downloadedAudio = `${tmpBase}.opus`
+      if (!fs.existsSync(downloadedAudio)) return m.reply('⚠️ No se pudo descargar el audio.')
 
       await conn.sendMessage(m.chat, {
-        audio: { stream: ytdlp.stdout },
+        audio: { url: downloadedAudio },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
@@ -118,6 +122,10 @@ async function downloadVideo(url, isAudio, m, conn) {
           }
         }
       }, { quoted: m })
+
+      // 🧹 Limpieza posterior
+      setTimeout(() => { try { fs.unlinkSync(downloadedAudio) } catch {} }, 10000)
+
     } else {
       // 🎬 Video (descarga a archivo por estabilidad)
       const args = [
