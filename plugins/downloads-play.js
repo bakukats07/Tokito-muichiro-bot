@@ -15,6 +15,7 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
 const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 const searchResults = {}
+let cachedBotThumb = null // 🧠 Cache de la miniatura del bot
 
 // 🧩 Autoactualiza yt-dlp cada 12 h
 setInterval(async () => {
@@ -22,15 +23,19 @@ setInterval(async () => {
 }, 43200000)
 
 // 🚀 Ejecutar yt-dlp sin shell (más rápido)
-function runYtDlp(args = []) {
+function runYtDlp(args = [], useStream = false) {
   return new Promise((resolve, reject) => {
     const ytdlp = spawn('yt-dlp', args)
     let stderr = ''
-    ytdlp.stderr.on('data', chunk => stderr += chunk.toString())
-    ytdlp.on('close', code => {
-      if (code === 0) resolve()
-      else reject(new Error(stderr))
-    })
+    if (!useStream) {
+      ytdlp.stderr.on('data', chunk => stderr += chunk.toString())
+      ytdlp.on('close', code => {
+        if (code === 0) resolve()
+        else reject(new Error(stderr))
+      })
+    } else {
+      resolve(ytdlp) // Devuelve el proceso directamente para usar su stdout
+    }
   })
 }
 
@@ -65,44 +70,48 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada (usa foto de perfil del bot)
+// ⚙️ Descarga optimizada (usa foto de perfil del bot y streams)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = `${tmpBase}.%(ext)s`
 
-    // 📸 Miniatura = foto actual del bot
-    let botThumb
-    try {
-      const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
-      const res = await fetch(botPicUrl)
-      botThumb = Buffer.from(await res.arrayBuffer())
-    } catch {
-      botThumb = null
-    }
-
     m.reply(`🎧 *Procesando:* ${url}\n> ⏳ Esto puede tardar unos segundos...`)
 
-    const args = isAudio
-      ? ['-f', 'bestaudio[abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, '--no-warnings', '--no-progress', url]
-      : ['-f', 'bv*[height<=720]+ba/b[height<=720]', '-o', output, '--no-warnings', '--no-progress', url]
+    // 📸 Miniatura del bot (cacheada)
+    let botThumb = cachedBotThumb
+    if (!botThumb) {
+      try {
+        const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
+        const res = await fetch(botPicUrl)
+        botThumb = Buffer.from(await res.arrayBuffer())
+        cachedBotThumb = botThumb // Guardar en caché
+      } catch {
+        botThumb = null
+      }
+    }
 
-    await runYtDlp(args)
-
-    const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
-    const downloaded = files.length ? path.join(tmpDir, files[0]) : null
-    if (!downloaded) return m.reply('⚠️ No se pudo obtener el archivo descargado.')
-
-    const title = path.basename(downloaded).replace(/\.[^/.]+$/, '')
+    // 🧠 Parámetros yt-dlp optimizados
+    const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
     if (isAudio) {
+      // 🎧 Modo stream directo de audio (sin escribir en disco)
+      const args = [
+        ...baseArgs,
+        '-f', 'bestaudio[ext=webm][abr<=128]',
+        '--extract-audio', '--audio-format', 'opus',
+        '-o', '-', // salida por stdout
+        url
+      ]
+      const ytdlp = await runYtDlp(args, true)
+
       await conn.sendMessage(m.chat, {
-        audio: { url: downloaded },
+        audio: { stream: ytdlp.stdout },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
           externalAdReply: {
-            title: `🎧 ${title}`,
+            title: '🎧 Audio descargado',
             body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
             thumbnail: botThumb,
             sourceUrl: url
@@ -110,6 +119,22 @@ async function downloadVideo(url, isAudio, m, conn) {
         }
       }, { quoted: m })
     } else {
+      // 🎬 Video (descarga a archivo por estabilidad)
+      const args = [
+        ...baseArgs,
+        '-f', 'bv*[height<=720]+ba/b[height<=720]',
+        '-o', output,
+        url
+      ]
+
+      await runYtDlp(args)
+
+      const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
+      const downloaded = files.length ? path.join(tmpDir, files[0]) : null
+      if (!downloaded) return m.reply('⚠️ No se pudo obtener el archivo descargado.')
+
+      const title = path.basename(downloaded).replace(/\.[^/.]+$/, '')
+
       await conn.sendMessage(m.chat, {
         video: { url: downloaded },
         caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
@@ -122,9 +147,11 @@ async function downloadVideo(url, isAudio, m, conn) {
           }
         }
       }, { quoted: m })
+
+      // 🧹 Limpieza posterior
+      setTimeout(() => { try { fs.unlinkSync(downloaded) } catch {} }, 10000)
     }
 
-    setTimeout(() => { try { fs.unlinkSync(downloaded) } catch {} }, 10000)
   } catch (err) {
     console.error('⚠️ Error inesperado:', err)
     m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
