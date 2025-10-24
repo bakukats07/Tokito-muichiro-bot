@@ -13,9 +13,14 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
 const botPfp = path.join(__dirname, '../media/bot.jpg')
 const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
-
-// Almacena resultados de búsqueda por usuario
 const searchResults = {}
+
+// 🧩 Autoactualiza yt-dlp en segundo plano cada 2h
+setInterval(async () => {
+  try {
+    await execPromise('yt-dlp -U')
+  } catch {}
+}, 7200000)
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
@@ -54,10 +59,10 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// Función para descargar y enviar audio/video
 async function downloadVideo(url, isAudio, m, conn) {
   try {
-    await execPromise('yt-dlp -U').catch(() => {}) // Actualización ligera
+    // ⚙️ Actualiza yt-dlp solo si pasó mucho tiempo desde la última
+    execPromise('yt-dlp -U').catch(() => {})
 
     const infoCmd = `yt-dlp -j ${url}`
     const { stdout: infoStdout } = await execPromise(infoCmd).catch(e => ({ stdout: '', stderr: String(e) }))
@@ -70,46 +75,30 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     const title = (info.title || 'VideoDescargado').replace(/[^\w\s]/gi, '')
     const tmpBase = path.join(tmpDir, `${Date.now()}_${title}`)
-    const tmpInput = `${tmpBase}.temp`
-    const tmpOgg = `${tmpBase}.ogg`
+    const tmpAudio = `${tmpBase}.opus`
+    const tmpVideo = `${tmpBase}.mp4`
 
-    const cmdDownload = isAudio
-      ? `yt-dlp -f bestaudio -o "${tmpInput}" "${url}" --no-progress`
-      : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpInput}.mp4" "${url}" --no-progress`
+    // 🕓 Aviso inicial más rápido
+    m.reply(`🎧 *Procesando:* ${title}\n> ⏳ Esto puede tardar unos segundos...`)
 
-    await m.reply('⏬ Descargando y preparando tu archivo...')
+    // 🚀 Descarga rápida según tipo
+    const cmd = isAudio
+      ? `yt-dlp -f bestaudio --extract-audio --audio-format opus -o "${tmpAudio}" "${url}" --no-progress`
+      : `yt-dlp -f "bestvideo+bestaudio/best" -o "${tmpVideo}" "${url}" --no-progress`
 
-    try {
-      const downloadResult = await execPromise(cmdDownload)
-      if (downloadResult.stderr) console.warn('yt-dlp stderr:', downloadResult.stderr)
-    } catch (errExec) {
-      console.error('❌ Error en yt-dlp:', errExec)
-      return m.reply('⚠️ Error descargando el archivo con yt-dlp.')
-    }
+    const { stderr } = await execPromise(cmd).catch(e => ({ stderr: String(e) }))
+    if (stderr) console.warn(stderr)
+
+    const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
 
     if (isAudio) {
-      const candidates = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
-      let realInput = candidates.map(f => path.join(tmpDir, f)).find(p => /\.(m4a|webm|mp4|mkv|opus|aac|flac|temp)$/i.test(p)) || tmpInput
-      if (!fs.existsSync(realInput)) realInput = tmpInput
-
-      const ffmpegCmd = `ffmpeg -y -i "${realInput}" -vn -ac 2 -ar 48000 -c:a libopus -b:a 96000 -vbr on -compression_level 10 "${tmpOgg}"`
-      try {
-        const ff = await execPromise(ffmpegCmd)
-        if (ff.stderr) console.warn('ffmpeg stderr:', ff.stderr)
-      } catch (errFf) {
-        console.error('❌ Error en ffmpeg:', errFf)
-        return m.reply('⚠️ No se pudo convertir el audio correctamente. Intenta otro video.')
+      if (!fs.existsSync(tmpAudio) || fs.statSync(tmpAudio).size < 10000) {
+        return m.reply('⚠️ No se pudo obtener el audio. Intenta otro video.')
       }
 
-      if (!fs.existsSync(tmpOgg) || fs.statSync(tmpOgg).size < 50000) {
-        console.warn('⚠️ Archivo OGG muy pequeño o corrupto')
-        return m.reply('⚠️ El audio parece vacío o dañado. Intenta con otro video.')
-      }
-
-      const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpOgg },
-        mimetype: 'audio/ogg',
+        audio: { url: tmpAudio },
+        mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
           externalAdReply: {
@@ -120,44 +109,34 @@ async function downloadVideo(url, isAudio, m, conn) {
           }
         }
       }, { quoted: m })
-
-      setTimeout(() => {
-        try { if (fs.existsSync(tmpOgg)) fs.unlinkSync(tmpOgg) } catch {}
-        try { if (fs.existsSync(realInput)) fs.unlinkSync(realInput) } catch {}
-      }, 15000)
-
-      return
-    }
-
-    if (!isAudio) {
-      const realVideoFile = `${tmpInput}.mp4`
-      const thumbnail = fs.existsSync(botPfp) ? fs.readFileSync(botPfp) : null
-      if (!fs.existsSync(realVideoFile)) console.warn('⚠️ Archivo de video no encontrado:', realVideoFile)
-
+    } else {
+      if (!fs.existsSync(tmpVideo)) return m.reply('⚠️ No se pudo obtener el video.')
       await conn.sendMessage(m.chat, {
-        video: { url: realVideoFile },
+        video: { url: tmpVideo },
         caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
         contextInfo: {
           externalAdReply: {
             title,
-            body: `Tu bot siempre activo 🎵`,
+            body: 'Tu bot siempre activo 🎵',
             thumbnail,
             sourceUrl: url
           }
         }
       }, { quoted: m })
-
-      setTimeout(() => {
-        try { if (fs.existsSync(realVideoFile)) fs.unlinkSync(realVideoFile) } catch {}
-      }, 15000)
     }
 
+    // 🧹 Limpieza rápida
+    setTimeout(() => {
+      try { fs.unlinkSync(isAudio ? tmpAudio : tmpVideo) } catch {}
+    }, 10000)
+
   } catch (err) {
-    console.error('⚠️ Error inesperado en downloadVideo:', err)
-    return m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
+    console.error('⚠️ Error inesperado:', err)
+    m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
   }
 }
 
+// 🧠 Manejador de selección
 handler.before = async function (m, { conn }) {
   const text = m.text?.trim()
   const user = m.sender
