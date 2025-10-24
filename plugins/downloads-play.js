@@ -116,7 +116,7 @@ async function downloadVideo(url, isAudio, m, conn) {
         contextInfo: {
           externalAdReply: {
             title: '🎧 Audio descargado',
-            body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
+            body: `MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`,
             thumbnail: botThumb,
             sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
           }
