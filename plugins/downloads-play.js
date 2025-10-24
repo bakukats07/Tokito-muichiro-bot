@@ -70,7 +70,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada (usa foto de perfil del bot y streams)
+// ⚙️ Descarga optimizada (usa foto de perfil del bot y modo híbrido)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -95,18 +95,22 @@ async function downloadVideo(url, isAudio, m, conn) {
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
     if (isAudio) {
-      // 🎧 Modo stream directo de audio (sin escribir en disco)
+      // 🎧 Modo híbrido: descarga temporal + envío rápido
+      const tmpFile = `${tmpBase}.opus`
       const args = [
         ...baseArgs,
         '-f', 'bestaudio[ext=webm][abr<=128]',
         '--extract-audio', '--audio-format', 'opus',
-        '-o', '-', // salida por stdout
+        '-o', tmpFile,
         url
       ]
-      const ytdlp = await runYtDlp(args, true)
 
+      // Ejecutar yt-dlp con salida a archivo
+      await runYtDlp(args)
+
+      // Envía el audio inmediatamente después de que el archivo se complete
       await conn.sendMessage(m.chat, {
-        audio: { stream: ytdlp.stdout },
+        audio: { url: tmpFile },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
@@ -118,6 +122,10 @@ async function downloadVideo(url, isAudio, m, conn) {
           }
         }
       }, { quoted: m })
+
+      // Limpieza (borra después de enviar)
+      setTimeout(() => { try { fs.unlinkSync(tmpFile) } catch {} }, 8000)
+
     } else {
       // 🎬 Video (descarga a archivo por estabilidad)
       const args = [
