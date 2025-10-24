@@ -70,7 +70,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada (usa foto de perfil del bot y modo híbrido)
+// ⚙️ Descarga optimizada (usa foto de perfil del bot y streams)
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -95,22 +95,18 @@ async function downloadVideo(url, isAudio, m, conn) {
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
     if (isAudio) {
-      // 🎧 Modo híbrido: descarga temporal + envío rápido
-      const tmpFile = `${tmpBase}.opus`
+      // 🎧 Modo stream directo de audio (sin escribir en disco)
       const args = [
         ...baseArgs,
         '-f', 'bestaudio[ext=webm][abr<=128]',
         '--extract-audio', '--audio-format', 'opus',
-        '-o', tmpFile,
+        '-o', '-', // salida por stdout
         url
       ]
+      const ytdlp = await runYtDlp(args, true)
 
-      // Ejecutar yt-dlp con salida a archivo
-      await runYtDlp(args)
-
-      // Envía el audio inmediatamente después de que el archivo se complete
       await conn.sendMessage(m.chat, {
-        audio: { url: tmpFile },
+        audio: { stream: ytdlp.stdout },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
         contextInfo: {
@@ -118,14 +114,10 @@ async function downloadVideo(url, isAudio, m, conn) {
             title: '🎧 Audio descargado',
             body: `Descargado con yt-dlp${CREATOR_SIGNATURE}`,
             thumbnail: botThumb,
-            sourceUrl: url
+            sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
           }
         }
       }, { quoted: m })
-
-      // Limpieza (borra después de enviar)
-      setTimeout(() => { try { fs.unlinkSync(tmpFile) } catch {} }, 8000)
-
     } else {
       // 🎬 Video (descarga a archivo por estabilidad)
       const args = [
@@ -151,7 +143,7 @@ async function downloadVideo(url, isAudio, m, conn) {
             title,
             body: 'Tu bot siempre activo 🎵',
             thumbnail: botThumb,
-            sourceUrl: url
+            sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
           }
         }
       }, { quoted: m })
