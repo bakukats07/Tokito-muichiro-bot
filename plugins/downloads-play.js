@@ -39,6 +39,16 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
+// 🔧 Función para generar la mini tarjeta
+function getExternalAdReply(title, body, thumbnail) {
+  return {
+    title,
+    body,
+    thumbnail,
+    sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
+  }
+}
+
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
@@ -70,11 +80,11 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada (usa foto de perfil del bot y streams)
+// ⚙️ Descarga optimizada
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
-    const output = `${tmpBase}.%(ext)s`
+    const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
     m.reply(`🎧 *Procesando:* ${url}\n> ⏳ Esto puede tardar unos segundos...`)
 
@@ -85,79 +95,57 @@ async function downloadVideo(url, isAudio, m, conn) {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl)
         botThumb = Buffer.from(await res.arrayBuffer())
-        cachedBotThumb = botThumb // Guardar en caché
-      } catch {
-        botThumb = null
-      }
+        cachedBotThumb = botThumb
+      } catch { botThumb = null }
     }
 
-    // 🧠 Parámetros yt-dlp optimizados
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
-    // 🔧 AUDIO: corrección completa (ya no se daña)
     if (isAudio) {
+      // 🔊 Audio como PTT
       const args = [
         ...baseArgs,
         '-f', 'bestaudio[ext=webm][abr<=128]',
         '--extract-audio', '--audio-format', 'opus',
-        '-o', `${tmpBase}.opus`,
-        url
-      ]
-
-      await runYtDlp(args)
-
-      const downloadedAudio = `${tmpBase}.opus`
-      if (!fs.existsSync(downloadedAudio)) return m.reply('⚠️ No se pudo descargar el audio.')
-
-      await conn.sendMessage(m.chat, {
-        audio: { url: downloadedAudio },
-        mimetype: 'audio/ogg; codecs=opus',
-        ptt: true,
-        contextInfo: {
-          externalAdReply: {
-            title: '🎧 Audio descargado',
-            body: `MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`,
-            thumbnail: botThumb,
-            sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
-          }
-        }
-      }, { quoted: m })
-
-      // 🧹 Limpieza posterior
-      setTimeout(() => { try { fs.unlinkSync(downloadedAudio) } catch {} }, 10000)
-
-    } else {
-      // 🎬 Video (descarga a archivo por estabilidad)
-      const args = [
-        ...baseArgs,
-        '-f', 'bv*[height<=720]+ba/b[height<=720]',
         '-o', output,
         url
       ]
 
       await runYtDlp(args)
 
-      const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(path.basename(tmpBase)))
-      const downloaded = files.length ? path.join(tmpDir, files[0]) : null
-      if (!downloaded) return m.reply('⚠️ No se pudo obtener el archivo descargado.')
-
-      const title = path.basename(downloaded).replace(/\.[^/.]+$/, '')
+      if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el audio.')
 
       await conn.sendMessage(m.chat, {
-        video: { url: downloaded },
-        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
-        contextInfo: {
-          externalAdReply: {
-            title,
-            body: 'Tu bot siempre activo 🎵',
-            thumbnail: botThumb,
-            sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
-          }
-        }
+        audio: { url: output },
+        mimetype: 'audio/ogg; codecs=opus',
+        ptt: true,
+        contextInfo: { externalAdReply: getExternalAdReply('🎧 Audio descargado', `MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`, botThumb) }
       }, { quoted: m })
 
-      // 🧹 Limpieza posterior
-      setTimeout(() => { try { fs.unlinkSync(downloaded) } catch {} }, 10000)
+      setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
+
+    } else {
+      // 🎬 Video compatible WhatsApp
+      const args = [
+        ...baseArgs,
+        '-f', 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/mp4',
+        '-o', output,
+        url
+      ]
+
+      await runYtDlp(args)
+
+      if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el video.')
+
+      const title = path.basename(output).replace(/\.[^/.]+$/, '')
+
+      await conn.sendMessage(m.chat, {
+        video: { url: output },
+        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
+        contextInfo: { externalAdReply: getExternalAdReply(title, 'Tu bot siempre activo 🎵', botThumb) }
+      }, { quoted: m })
+
+      setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
     }
 
   } catch (err) {
