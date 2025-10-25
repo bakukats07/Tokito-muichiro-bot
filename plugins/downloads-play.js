@@ -4,10 +4,9 @@ import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 import { promisify } from 'util'
-import { exec } from 'child_process'
 import fetch from 'node-fetch'
 
-const execPromise = promisify(exec)
+const execPromise = promisify(spawn)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const tmpDir = path.join(__dirname, 'tmp')
@@ -21,9 +20,10 @@ const SELECTION_TIMEOUT = 20000
 const searchCache = new Map()
 const MAX_CACHE_ITEMS = 10
 
-setInterval(() => execPromise('yt-dlp -U').catch(() => {}), 43200000)
+// Actualiza yt-dlp cada 12 horas
+setInterval(() => execPromise('yt-dlp', ['-U']).catch(() => {}), 43200000)
 
-// ✅ Protección total contra undefined
+// Protección contra undefined
 const safeString = (value, fallback = 'N/A') => (value ?? fallback).toString()
 
 async function fastSearch(query) {
@@ -38,22 +38,20 @@ async function fastSearch(query) {
   return resultPromise
 }
 
-function runYtDlp(args = [], useStream = false) {
+function runYtDlp(args = []) {
   return new Promise((resolve, reject) => {
     const ytdlp = spawn('yt-dlp', args, {
-      stdio: useStream ? 'pipe' : ['ignore', 'ignore', 'pipe'],
+      stdio: ['ignore', 'ignore', 'pipe'],
       detached: false,
       windowsHide: true,
       env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
     })
     let stderr = ''
-    if (!useStream) {
-      ytdlp.stderr.on('data', chunk => (stderr += chunk.toString()))
-      ytdlp.on('close', code => {
-        if (code === 0) resolve()
-        else reject(new Error(stderr))
-      })
-    } else resolve(ytdlp)
+    ytdlp.stderr.on('data', chunk => (stderr += chunk.toString()))
+    ytdlp.on('close', code => {
+      if (code === 0) resolve()
+      else reject(new Error(stderr))
+    })
   })
 }
 
@@ -81,15 +79,15 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
         .filter(v => !v.isLive && v.seconds > 0)
       if (!videos.length) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-        return m.reply('⚠️ No se encontró ningún video válido para descargar.')
+        return m.reply('⚠️ No se encontró ningún video válido.')
       }
 
       const top5 = videos.slice(0, 5)
       searchResults[m.sender] = { videos: top5, isAudio }
 
-      let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
+      let msg = '🎬 *Selecciona el video respondiendo con el número:*\n\n'
       for (const [i, v] of top5.entries()) {
-        msg += `*${i + 1}.* ${safeString(v.title)}\n📺 ${safeString(v.author?.name)}  ⏱️ ${safeString(v.timestamp)}\n\n`
+        msg += `*${i + 1}.* ${safeString(v.title)}\n📺 ${safeString(v.author?.name)} ⏱️ ${safeString(v.timestamp)}\n\n`
       }
 
       await conn.sendMessage(m.chat, { text: msg }, { quoted: m })
@@ -107,7 +105,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   } catch (err) {
     console.error('❌ Error en downloads-play:', err)
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    m.reply('⚠️ Hubo un error al procesar la descarga. Intenta con otro video.')
+    m.reply('⚠️ Error al procesar la descarga.')
   }
 }
 
@@ -143,19 +141,17 @@ async function downloadVideo(url, isAudio, m, conn) {
         if (buf && buf.length) thumbBuffer = buf
       } catch {}
     }
-
     const safeThumb = thumbBuffer && thumbBuffer.length ? thumbBuffer : Buffer.alloc(0)
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
-      caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
-      caption += `👤 *Autor:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
-      caption += `⏱️ *Duración:* ${safeString(vidInfo.timestamp)}\n`
-      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo.views)}\n`
-      caption += `📺 *Canal:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
-      caption += `🔗 *Link:* ${safeString(vidInfo.url)}\n`
+      caption += `📌 Título: ${safeString(vidInfo.title)}\n`
+      caption += `👤 Autor: ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
+      caption += `⏱️ Duración: ${safeString(vidInfo.timestamp)}\n`
+      caption += `👁️ Visualizaciones: ${safeString(vidInfo.views)}\n`
+      caption += `🔗 Link: ${safeString(vidInfo.url)}\n`
     }
-    caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
+    caption += `\nDescargando...${CREATOR_SIGNATURE}`
     const safeCaption = safeString(caption, 'Descargando...')
 
     await conn.sendMessage(m.chat, { image: safeThumb, caption: safeCaption }, { quoted: m })
@@ -166,14 +162,11 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await runYtDlp(args).catch(e => { throw new Error(`yt-dlp falló: ${e.message}`) })
 
-    if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
-      await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+    if (!fs.existsSync(output) || fs.statSync(output).size === 0)
       return m.reply('⚠️ No se pudo descargar el archivo.')
-    }
 
     const stream = fs.createReadStream(output)
     if (!stream) return m.reply('⚠️ Error al leer el archivo.')
-    stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
     if (isAudio) {
       await conn.sendMessage(m.chat, {
@@ -196,7 +189,7 @@ async function downloadVideo(url, isAudio, m, conn) {
   } catch (err) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     console.error('⚠️ Error inesperado:', err)
-    m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
+    m.reply('⚠️ No se pudo descargar este video.')
   }
 }
 
