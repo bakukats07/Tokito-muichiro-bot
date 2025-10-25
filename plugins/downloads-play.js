@@ -4,10 +4,9 @@ import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 import { promisify } from 'util'
-import { exec } from 'child_process'
 import fetch from 'node-fetch'
 
-const execPromise = promisify(exec)
+const execPromise = promisify(require('child_process').exec)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const tmpDir = path.join(__dirname, 'tmp')
@@ -18,10 +17,10 @@ const searchResults = {}
 const selectionTimeouts = {}
 let cachedBotThumb = null
 const SELECTION_TIMEOUT = 20000
-
 const searchCache = new Map()
 const MAX_CACHE_ITEMS = 10
 
+// Actualiza yt-dlp cada 12h
 setInterval(() => execPromise('yt-dlp -U').catch(() => {}), 43200000)
 
 // ✅ Protección total contra undefined
@@ -58,21 +57,17 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
-// 🔹 Mejora: protección de valores undefined
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title: (title ?? '🎬 Video').toString(),
-    body: (body ?? '').toString(),
+    title: safeString(title, '🎬 Video'),
+    body: safeString(body, ''),
     thumbnail: thumbnail && thumbnail.length ? thumbnail : Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
-  if (!args[0]) {
-    return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
-  }
-
+  if (!args[0]) return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
   await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
 
   const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command.toLowerCase())
@@ -84,7 +79,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       const search = await fastSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
-
       if (!videos.length) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se encontró ningún video válido para descargar.')
@@ -129,49 +123,35 @@ async function downloadVideo(url, isAudio, m, conn) {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl)
         cachedBotThumb = Buffer.from(await res.arrayBuffer())
-      } catch {
-        cachedBotThumb = Buffer.alloc(0)
-      }
+      } catch { cachedBotThumb = Buffer.alloc(0) }
     }
 
     const baseArgs = [
-      '--no-warnings',
-      '--no-progress',
-      '--no-call-home',
-      '--no-check-certificate',
-      '--quiet',
-      '--no-cache-dir',
-      '--buffer-size', '8M',
-      '--concurrent-fragments', '2',
+      '--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate',
+      '--quiet', '--no-cache-dir', '--buffer-size', '8M', '--concurrent-fragments', '2',
       '--downloader', 'ffmpeg'
     ]
 
     let vidInfo
-    try {
-      const res = await ytSearch(url)
-      vidInfo = res.videos?.[0] || null
-    } catch {}
+    try { vidInfo = (await ytSearch(url)).videos?.[0] || null } catch {}
 
-    const thumbUrl = vidInfo?.thumbnail || null
-    let thumbBuffer = cachedBotThumb || Buffer.alloc(0)
-    if (thumbUrl) {
+    let thumbBuffer = cachedBotThumb
+    if (vidInfo?.thumbnail) {
       try {
-        const res = await fetch(thumbUrl)
+        const res = await fetch(vidInfo.thumbnail)
         const buf = Buffer.from(await res.arrayBuffer())
         if (buf.length) thumbBuffer = buf
-      } catch {
-        thumbBuffer = cachedBotThumb || Buffer.alloc(0)
-      }
+      } catch {}
     }
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
-      caption += `📌 *Título:* ${safeString(vidInfo?.title)}\n`
-      caption += `👤 *Autor:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
-      caption += `⏱️ *Duración:* ${safeString(vidInfo?.timestamp)}\n`
-      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo?.views)}\n`
-      caption += `📺 *Canal:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
-      caption += `🔗 *Link:* ${safeString(vidInfo?.url)}\n`
+      caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
+      caption += `👤 *Autor:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
+      caption += `⏱️ *Duración:* ${safeString(vidInfo.timestamp)}\n`
+      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo.views)}\n`
+      caption += `📺 *Canal:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
+      caption += `🔗 *Link:* ${safeString(vidInfo.url)}\n`
     }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
@@ -198,18 +178,17 @@ async function downloadVideo(url, isAudio, m, conn) {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title ?? '🎬 Video', caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
         caption: safeString(caption),
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title ?? '🎬 Video', caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
       }, { quoted: m })
     }
 
     stream.on('close', () => setTimeout(() => fs.promises.unlink(output).catch(() => {}), 5000))
-
   } catch (err) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     console.error('⚠️ Error inesperado:', err)
