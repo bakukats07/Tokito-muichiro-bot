@@ -93,13 +93,11 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada con ficha completa integrada
+// ⚙️ Descarga optimizada con ficha integrada en el mensaje final
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
-
-    m.reply(`🎧 *Procesando:* ${url}\n> ⏳ Esto puede tardar unos segundos...`)
 
     // 📸 Miniatura del bot (cacheada)
     let botThumb = cachedBotThumb
@@ -121,8 +119,8 @@ async function downloadVideo(url, isAudio, m, conn) {
       vidInfo = infoSearch.videos?.[0] || null
     } catch {}
 
-    // ✅ Construir ficha completa
-    let caption = `${isAudio ? '🎧 Audio encontrado' : '🎬 Video encontrado'}\n\n`
+    // 📝 Construir mensaje "Procesando" + datos del vídeo/audio
+    let caption = `${isAudio ? '🎧 Procesando' : '🎬 Procesando'}: ${url}\n\n`
     if (vidInfo) {
       caption += `📌 Título: ${vidInfo.title}\n`
       caption += `👤 Autor: ${vidInfo.author?.name || 'Desconocido'}\n`
@@ -133,6 +131,10 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
     caption += `\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
 
+    // Enviar mensaje completo antes de la descarga
+    await conn.sendMessage(m.chat, { text: caption }, { quoted: m })
+
+    // 🔊/🎥 Descargar y enviar archivo
     if (isAudio) {
       const args = [
         ...baseArgs,
