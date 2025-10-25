@@ -59,10 +59,11 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
+// ✅ Protección completa contra undefined en título/cuerpo
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title: title?.toString() || '',
-    body: body?.toString() || '',
+    title: (title ?? '').toString(),
+    body: (body ?? '').toString(),
     thumbnail: thumbnail || Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
@@ -126,7 +127,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
-    // ⚡ Miniatura cacheada
+    // ⚡ Miniatura cacheada en disco solo una vez
     if (!cachedBotThumb) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
@@ -137,24 +138,20 @@ async function downloadVideo(url, isAudio, m, conn) {
       }
     }
 
-    // 🔧 yt-dlp ultrarrápido (usa aria2c si está disponible)
+    // 🔧 yt-dlp optimizado con downloader ffmpeg
     const baseArgs = [
       '--no-warnings',
       '--no-progress',
       '--no-call-home',
       '--no-check-certificate',
-      '--no-cache-dir',
-      '--no-mtime',
-      '--no-playlist',
-      '--no-colors',
       '--quiet',
-      '--buffer-size', '16M',
-      '--retries', '2',
-      '--fragment-retries', '1',
-      '--concurrent-fragments', '6',
-      '--downloader', 'aria2c,ffmpeg'
+      '--no-cache-dir',
+      '--buffer-size', '8M',
+      '--concurrent-fragments', '2',
+      '--downloader', 'ffmpeg'
     ]
 
+    // 📄 Obtiene info básica
     let vidInfo
     try {
       const res = await ytSearch(url)
@@ -186,7 +183,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
 
     const args = isAudio
-      ? [...baseArgs, '-f', 'bestaudio[abr<=128][ext=webm]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
+      ? [...baseArgs, '-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
       : [...baseArgs, '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]', '-o', output, url]
 
     await runYtDlp(args).catch(e => {
@@ -200,6 +197,7 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
+    // 🎧 Envío directo por stream (seguro)
     const stream = fs.createReadStream(output)
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
@@ -218,8 +216,8 @@ async function downloadVideo(url, isAudio, m, conn) {
       }, { quoted: m })
     }
 
-    // 🧹 Limpieza más rápida
-    stream.on('close', () => fs.promises.unlink(output).catch(() => {}))
+    // 🧹 Limpieza tras envío
+    stream.on('close', () => setTimeout(() => fs.promises.unlink(output).catch(() => {}), 5000))
 
   } catch (err) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
