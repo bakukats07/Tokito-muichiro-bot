@@ -93,7 +93,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada con ficha integrada en el mensaje final
+// ⚙️ Descarga optimizada con ficha completa integrada
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -121,9 +121,17 @@ async function downloadVideo(url, isAudio, m, conn) {
       vidInfo = infoSearch.videos?.[0] || null
     } catch {}
 
-    const caption = vidInfo
-      ? `${isAudio ? '🎧' : '🎬'} ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
-      : `${isAudio ? '🎧 Audio' : '🎬 Video'} descargado${CREATOR_SIGNATURE}`
+    // ✅ Construir ficha completa
+    let caption = `${isAudio ? '🎧 Audio encontrado' : '🎬 Video encontrado'}\n\n`
+    if (vidInfo) {
+      caption += `📌 Título: ${vidInfo.title}\n`
+      caption += `👤 Autor: ${vidInfo.author?.name || 'Desconocido'}\n`
+      caption += `⏱️ Duración: ${vidInfo.timestamp || 'N/A'}\n`
+      caption += `👁️ Visualizaciones: ${vidInfo.views || 'N/A'}\n`
+      caption += `📺 Canal: ${vidInfo.author?.name || 'Desconocido'}\n`
+      caption += `🔗 Link: ${vidInfo.url}\n`
+    }
+    caption += `\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
 
     if (isAudio) {
       const args = [
