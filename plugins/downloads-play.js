@@ -120,7 +120,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     } catch {}
 
     // 📝 Construir mensaje "Procesando" + datos del vídeo/audio
-    let caption = `${isAudio ? '🎧 Procesando' : '🎬 Procesando'}: ${url}\n\n`
+    let caption = `${isAudio ? '🎧 Procesando' : '🎬 Procesando'}:\n\n`
     if (vidInfo) {
       caption += `📌 Título: ${vidInfo.title}\n`
       caption += `👤 Autor: ${vidInfo.author?.name || 'Desconocido'}\n`
