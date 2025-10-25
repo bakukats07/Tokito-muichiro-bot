@@ -148,10 +148,12 @@ async function downloadVideo(url, isAudio, m, conn) {
     let vidInfo
     try {
       const res = await ytSearch(url)
-      vidInfo = res.videos?.[0] || null
-    } catch {}
+      vidInfo = res.videos?.[0] || { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null, views: 'N/A', timestamp: 'N/A' }
+    } catch {
+      vidInfo = { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null, views: 'N/A', timestamp: 'N/A' }
+    }
 
-    const thumbUrl = vidInfo?.thumbnail || null
+    const thumbUrl = vidInfo.thumbnail || null
     let thumbBuffer = cachedBotThumb
     if (thumbUrl && !thumbBuffer?.length) {
       try {
@@ -163,14 +165,12 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
-    if (vidInfo) {
-      caption += `📌 *Título:* ${safeString(vidInfo?.title)}\n`
-      caption += `👤 *Autor:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
-      caption += `⏱️ *Duración:* ${safeString(vidInfo?.timestamp)}\n`
-      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo?.views)}\n`
-      caption += `📺 *Canal:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
-      caption += `🔗 *Link:* ${safeString(vidInfo?.url)}\n`
-    }
+    caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
+    caption += `👤 *Autor:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
+    caption += `⏱️ *Duración:* ${safeString(vidInfo.timestamp)}\n`
+    caption += `👁️ *Visualizaciones:* ${safeString(vidInfo.views)}\n`
+    caption += `📺 *Canal:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
+    caption += `🔗 *Link:* ${safeString(vidInfo.url)}\n`
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
     await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
@@ -191,18 +191,20 @@ async function downloadVideo(url, isAudio, m, conn) {
     const stream = fs.createReadStream(output)
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
+    const safeVidInfo = vidInfo || { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null }
+
     if (isAudio) {
       await conn.sendMessage(m.chat, {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(safeVidInfo.title, caption, thumbBuffer) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
         caption: safeString(caption),
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(safeVidInfo.title, caption, thumbBuffer) }
       }, { quoted: m })
     }
 
