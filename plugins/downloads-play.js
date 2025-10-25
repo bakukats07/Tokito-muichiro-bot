@@ -58,8 +58,8 @@ function runYtDlp(args = [], useStream = false) {
 // ✅ Protección total contra errores .toString()
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title: String(title || ''),
-    body: String(body || ''),
+    title: toString(title || ''),
+    body: toString(body || ''),
     thumbnail: thumbnail || Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
