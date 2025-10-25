@@ -24,6 +24,9 @@ const MAX_CACHE_ITEMS = 10
 
 setInterval(() => execPromise('yt-dlp -U').catch(() => {}), 43200000)
 
+// ✅ Protección total contra undefined
+const safeString = (value, fallback = 'N/A') => (value ?? fallback).toString()
+
 async function fastSearch(query) {
   if (searchCache.has(query)) return searchCache.get(query)
   const resultPromise = ytSearch(query)
@@ -55,11 +58,10 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
-// ✅ Protección total contra errores .toString()
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title: (title ?? '').toString(),
-    body: (body ?? '').toString(),
+    title: safeString(title, '🎬 Video'),
+    body: safeString(body, ''),
     thumbnail: thumbnail || Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
@@ -92,7 +94,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
 
       let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
       for (const [i, v] of top5.entries()) {
-        msg += `*${i + 1}.* ${v.title}\n📺 ${v.author.name}  ⏱️ ${v.timestamp}\n\n`
+        msg += `*${i + 1}.* ${safeString(v.title)}\n📺 ${safeString(v.author?.name)}  ⏱️ ${safeString(v.timestamp)}\n\n`
       }
 
       await conn.sendMessage(m.chat, { text: msg }, { quoted: m })
@@ -162,12 +164,12 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
-      caption += `📌 *Título:* ${vidInfo.title}\n`
-      caption += `👤 *Autor:* ${vidInfo.author?.name || 'Desconocido'}\n`
-      caption += `⏱️ *Duración:* ${vidInfo.timestamp || 'N/A'}\n`
-      caption += `👁️ *Visualizaciones:* ${vidInfo.views || 'N/A'}\n`
-      caption += `📺 *Canal:* ${vidInfo.author?.name || 'Desconocido'}\n`
-      caption += `🔗 *Link:* ${vidInfo.url}\n`
+      caption += `📌 *Título:* ${safeString(vidInfo?.title)}\n`
+      caption += `👤 *Autor:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
+      caption += `⏱️ *Duración:* ${safeString(vidInfo?.timestamp)}\n`
+      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo?.views)}\n`
+      caption += `📺 *Canal:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
+      caption += `🔗 *Link:* ${safeString(vidInfo?.url)}\n`
     }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
@@ -199,7 +201,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
-        caption: String(caption || ''),
+        caption: safeString(caption),
         contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
       }, { quoted: m })
     }
