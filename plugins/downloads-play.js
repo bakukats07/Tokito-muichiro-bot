@@ -15,16 +15,14 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
 const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 const searchResults = {}
-const selectionTimeouts = {} // ⏱️ Guardar timeout por usuario
-let cachedBotThumb = null // 🧠 Cache de la miniatura del bot
-const SELECTION_TIMEOUT = 20000 // ⏱️ Tiempo de espera 20s
+const selectionTimeouts = {}
+let cachedBotThumb = null
+const SELECTION_TIMEOUT = 20000
 
-// 🧩 Autoactualiza yt-dlp cada 12 h
 setInterval(async () => {
   try { await execPromise('yt-dlp -U') } catch {}
 }, 43200000)
 
-// 🚀 Ejecutar yt-dlp sin shell (más rápido)
 function runYtDlp(args = [], useStream = false) {
   return new Promise((resolve, reject) => {
     const ytdlp = spawn('yt-dlp', args)
@@ -41,7 +39,6 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
-// 🔧 Función para generar la mini tarjeta
 function getExternalAdReply(title, body, thumbnail) {
   return {
     title,
@@ -75,7 +72,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       })
       m.reply(msg)
 
-      // ⏱️ Tiempo máximo de respuesta
       if (selectionTimeouts[m.sender]) clearTimeout(selectionTimeouts[m.sender])
       selectionTimeouts[m.sender] = setTimeout(() => {
         if (searchResults[m.sender]) {
@@ -93,7 +89,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada con ficha integrada en el mensaje final
+// ⚙️ Descarga optimizada con ficha + miniatura del video en el mensaje “Procesando”
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -119,20 +115,32 @@ async function downloadVideo(url, isAudio, m, conn) {
       vidInfo = infoSearch.videos?.[0] || null
     } catch {}
 
-    // 📝 Construir mensaje "Procesando" + datos del vídeo/audio
-    let caption = `${isAudio ? '🎧 Procesando' : '🎬 Procesando'}:\n\n`
+    // 🖼️ Obtener miniatura del video
+    let thumbBuffer = null
+    if (vidInfo?.thumbnail) {
+      try {
+        const res = await fetch(vidInfo.thumbnail)
+        thumbBuffer = Buffer.from(await res.arrayBuffer())
+      } catch { thumbBuffer = null }
+    }
+
+    // 📝 Construir mensaje “Procesando” + ficha + imagen
+    let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
-      caption += `📌 Título: ${vidInfo.title}\n`
-      caption += `👤 Autor: ${vidInfo.author?.name || 'Desconocido'}\n`
-      caption += `⏱️ Duración: ${vidInfo.timestamp || 'N/A'}\n`
-      caption += `👁️ Visualizaciones: ${vidInfo.views || 'N/A'}\n`
-      caption += `📺 Canal: ${vidInfo.author?.name || 'Desconocido'}\n`
-      caption += `🔗 Link: ${vidInfo.url}\n`
+      caption += `📌 *Título:* ${vidInfo.title}\n`
+      caption += `👤 *Autor:* ${vidInfo.author?.name || 'Desconocido'}\n`
+      caption += `⏱️ *Duración:* ${vidInfo.timestamp || 'N/A'}\n`
+      caption += `👁️ *Visualizaciones:* ${vidInfo.views || 'N/A'}\n`
+      caption += `📺 *Canal:* ${vidInfo.author?.name || 'Desconocido'}\n`
+      caption += `🔗 *Link:* ${vidInfo.url}\n`
     }
     caption += `\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
 
-    // Enviar mensaje completo antes de la descarga
-    await conn.sendMessage(m.chat, { text: caption }, { quoted: m })
+    // 🖼️ Enviar mensaje con imagen + datos antes de descargar
+    await conn.sendMessage(m.chat, {
+      image: thumbBuffer || botThumb,
+      caption
+    }, { quoted: m })
 
     // 🔊/🎥 Descargar y enviar archivo
     if (isAudio) {
@@ -144,7 +152,8 @@ async function downloadVideo(url, isAudio, m, conn) {
         url
       ]
       await runYtDlp(args)
-      if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el audio.')
+      if (!fs.existsSync(output) || fs.statSync(output).size === 0)
+        return m.reply('⚠️ No se pudo descargar el audio.')
 
       await conn.sendMessage(m.chat, {
         audio: { url: output },
@@ -152,7 +161,6 @@ async function downloadVideo(url, isAudio, m, conn) {
         ptt: true,
         contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, botThumb) }
       }, { quoted: m })
-
     } else {
       const args = [
         ...baseArgs,
@@ -161,7 +169,8 @@ async function downloadVideo(url, isAudio, m, conn) {
         url
       ]
       await runYtDlp(args)
-      if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el video.')
+      if (!fs.existsSync(output) || fs.statSync(output).size === 0)
+        return m.reply('⚠️ No se pudo descargar el video.')
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
@@ -170,7 +179,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       }, { quoted: m })
     }
 
-    // Limpiar archivo temporal después de 30s
+    // 🧹 Eliminar archivo temporal
     setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
 
   } catch (err) {
@@ -179,7 +188,6 @@ async function downloadVideo(url, isAudio, m, conn) {
   }
 }
 
-// 🧠 Selección de resultado
 handler.before = async function (m, { conn }) {
   const text = m.text?.trim()
   const user = m.sender
@@ -189,7 +197,6 @@ handler.before = async function (m, { conn }) {
   if (isNaN(num) || num < 1 || num > data.videos.length) return
   const vid = data.videos[num - 1]
 
-  // ✅ Cancelar timeout si el usuario respondió
   if (selectionTimeouts[user]) {
     clearTimeout(selectionTimeouts[user])
     delete selectionTimeouts[user]
