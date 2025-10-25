@@ -145,6 +145,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       } catch {}
     }
 
+    const safeThumb = thumbBuffer && thumbBuffer.length ? thumbBuffer : Buffer.alloc(0)
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
       caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
@@ -155,8 +156,9 @@ async function downloadVideo(url, isAudio, m, conn) {
       caption += `🔗 *Link:* ${safeString(vidInfo.url)}\n`
     }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
+    const safeCaption = safeString(caption, 'Descargando...')
 
-    await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
+    await conn.sendMessage(m.chat, { image: safeThumb, caption: safeCaption }, { quoted: m })
 
     const args = isAudio
       ? [...baseArgs, '-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
@@ -172,6 +174,8 @@ async function downloadVideo(url, isAudio, m, conn) {
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
     const stream = fs.createReadStream(output)
+    if (!stream) return m.reply('⚠️ Error al leer el archivo.')
+
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
     if (isAudio) {
@@ -179,13 +183,13 @@ async function downloadVideo(url, isAudio, m, conn) {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, safeCaption, safeThumb) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
-        caption: safeString(caption),
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        caption: safeCaption,
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, safeCaption, safeThumb) }
       }, { quoted: m })
     }
 
