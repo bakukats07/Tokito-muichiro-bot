@@ -49,6 +49,29 @@ function getExternalAdReply(title, body, thumbnail) {
   }
 }
 
+// 📌 Nueva función: mostrar ficha previa antes de enviar audio/video
+async function sendVideoInfoPreview(vidInfo, m, conn, isAudio) {
+  let botThumb = cachedBotThumb
+  if (!botThumb) {
+    try {
+      const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
+      const res = await fetch(botPicUrl)
+      botThumb = Buffer.from(await res.arrayBuffer())
+      cachedBotThumb = botThumb
+    } catch { botThumb = null }
+  }
+
+  const previewTitle = isAudio ? '🎧 Audio encontrado' : '🎬 Video encontrado'
+  const previewBody = `Título: ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}`
+
+  await conn.sendMessage(m.chat, {
+    text: previewBody,
+    contextInfo: {
+      externalAdReply: getExternalAdReply(previewTitle, previewBody, botThumb)
+    }
+  }, { quoted: m })
+}
+
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
@@ -111,6 +134,13 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
+    // 📌 Mostrar ficha previa con datos del video/audio
+    if (ytSearch) {
+      const infoSearch = await ytSearch(url)
+      const vidInfo = infoSearch.videos?.[0]
+      if (vidInfo) await sendVideoInfoPreview(vidInfo, m, conn, isAudio)
+    }
+
     if (isAudio) {
       const args = [
         ...baseArgs,
@@ -149,7 +179,7 @@ async function downloadVideo(url, isAudio, m, conn) {
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
-        caption: `🎬 ${title}\nVideo Descargado: MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`,
+        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
         contextInfo: { externalAdReply: getExternalAdReply(title, 'Tu bot siempre activo 🎵', botThumb) }
       }, { quoted: m })
 
