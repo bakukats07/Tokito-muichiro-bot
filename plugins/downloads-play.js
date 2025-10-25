@@ -49,29 +49,6 @@ function getExternalAdReply(title, body, thumbnail) {
   }
 }
 
-// 📌 Nueva función: mostrar ficha previa antes de enviar audio/video
-async function sendVideoInfoPreview(vidInfo, m, conn, isAudio) {
-  let botThumb = cachedBotThumb
-  if (!botThumb) {
-    try {
-      const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
-      const res = await fetch(botPicUrl)
-      botThumb = Buffer.from(await res.arrayBuffer())
-      cachedBotThumb = botThumb
-    } catch { botThumb = null }
-  }
-
-  const previewTitle = isAudio ? '🎧 Audio encontrado' : '🎬 Video encontrado'
-  const previewBody = `Título: ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}`
-
-  await conn.sendMessage(m.chat, {
-    text: previewBody,
-    contextInfo: {
-      externalAdReply: getExternalAdReply(previewTitle, previewBody, botThumb)
-    }
-  }, { quoted: m })
-}
-
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!args[0]) {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
@@ -113,7 +90,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada
+// ⚙️ Descarga optimizada con ficha integrada
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -134,12 +111,12 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
-    // 📌 Mostrar ficha previa con datos del video/audio
-    if (ytSearch) {
+    // 🔍 Obtener info del video/audio para la ficha
+    let vidInfo = null
+    try {
       const infoSearch = await ytSearch(url)
-      const vidInfo = infoSearch.videos?.[0]
-      if (vidInfo) await sendVideoInfoPreview(vidInfo, m, conn, isAudio)
-    }
+      vidInfo = infoSearch.videos?.[0] || null
+    } catch {}
 
     if (isAudio) {
       const args = [
@@ -151,14 +128,17 @@ async function downloadVideo(url, isAudio, m, conn) {
       ]
 
       await runYtDlp(args)
-
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el audio.')
+
+      const caption = vidInfo
+        ? `🎧 ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
+        : `🎧 Audio descargado${CREATOR_SIGNATURE}`
 
       await conn.sendMessage(m.chat, {
         audio: { url: output },
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply('🎧 Audio descargado', `MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`, botThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, botThumb) }
       }, { quoted: m })
 
       setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
@@ -172,15 +152,16 @@ async function downloadVideo(url, isAudio, m, conn) {
       ]
 
       await runYtDlp(args)
-
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el video.')
 
-      const title = path.basename(output).replace(/\.[^/.]+$/, '')
+      const caption = vidInfo
+        ? `🎬 ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
+        : `🎬 Video descargado${CREATOR_SIGNATURE}`
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
-        caption: `🎬 ${title}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`,
-        contextInfo: { externalAdReply: getExternalAdReply(title, 'Tu bot siempre activo 🎵', botThumb) }
+        caption,
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, botThumb) }
       }, { quoted: m })
 
       setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
