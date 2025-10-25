@@ -4,9 +4,10 @@ import ytSearch from 'yt-search'
 import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 import { promisify } from 'util'
+import { exec } from 'child_process'
 import fetch from 'node-fetch'
 
-const execPromise = promisify(require('child_process').exec)
+const execPromise = promisify(exec)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const tmpDir = path.join(__dirname, 'tmp')
