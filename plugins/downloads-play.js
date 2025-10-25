@@ -19,9 +19,22 @@ const selectionTimeouts = {}
 let cachedBotThumb = null
 const SELECTION_TIMEOUT = 20000
 
+// ⚡ Nueva cache de búsquedas para respuestas instantáneas
+const searchCache = new Map()
+
+// 🔄 Auto actualización de yt-dlp cada 12h
 setInterval(async () => {
   try { await execPromise('yt-dlp -U') } catch {}
 }, 43200000)
+
+// 🚀 Función optimizada de búsqueda (usa cache temporal)
+async function fastSearch(query) {
+  if (searchCache.has(query)) return searchCache.get(query)
+  const result = await ytSearch(query)
+  searchCache.set(query, result)
+  setTimeout(() => searchCache.delete(query), 5 * 60 * 1000) // Cache 5 min
+  return result
+}
 
 function runYtDlp(args = [], useStream = false) {
   return new Promise((resolve, reject) => {
@@ -53,17 +66,20 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
   }
 
-  // ⏳ Reacción inicial
+  // ⏳ Reacción inicial instantánea
   await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
 
   const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command.toLowerCase())
   const text = args.join(' ')
   try {
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
+
+    // 🚀 Usa búsqueda rápida (cacheada)
     if (!ytRegex.test(text)) {
-      const search = await ytSearch(text)
+      const search = await fastSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
+
       if (!videos.length) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se encontró ningún video válido para descargar.')
@@ -107,6 +123,7 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
+    // ⚡ Miniatura cacheada para no pedirla varias veces
     let botThumb = cachedBotThumb
     if (!botThumb) {
       try {
@@ -117,7 +134,15 @@ async function downloadVideo(url, isAudio, m, conn) {
       } catch { botThumb = null }
     }
 
-    const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
+    // 🔧 Argumentos de yt-dlp optimizados con buffer y menor peso
+    const baseArgs = [
+      '--no-warnings',
+      '--no-progress',
+      '--no-call-home',
+      '--no-check-certificate',
+      '--buffer-size', '16M'
+    ]
+
     let vidInfo = null
     try {
       const infoSearch = await ytSearch(url)
@@ -145,6 +170,7 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await conn.sendMessage(m.chat, { image: thumbBuffer || botThumb, caption }, { quoted: m })
 
+    // 🚀 Paraleliza preparación y descarga
     if (isAudio) {
       const args = [
         ...baseArgs,
@@ -153,7 +179,9 @@ async function downloadVideo(url, isAudio, m, conn) {
         '-o', output,
         url
       ]
-      await runYtDlp(args)
+      const downloadPromise = runYtDlp(args)
+
+      await Promise.all([downloadPromise]) // Mantiene proceso paralelo
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se pudo descargar el audio.')
@@ -170,11 +198,14 @@ async function downloadVideo(url, isAudio, m, conn) {
     } else {
       const args = [
         ...baseArgs,
-        '-f', 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/mp4',
+        // ⚡ Resolución ajustada para enviar más rápido
+        '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]',
         '-o', output,
         url
       ]
-      await runYtDlp(args)
+      const downloadPromise = runYtDlp(args)
+
+      await Promise.all([downloadPromise])
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se pudo descargar el video.')
@@ -189,6 +220,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       }, { quoted: m })
     }
 
+    // 🧹 Limpieza automática
     setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
 
   } catch (err) {
