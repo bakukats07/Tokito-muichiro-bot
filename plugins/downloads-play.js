@@ -62,7 +62,7 @@ function getExternalAdReply(title, body, thumbnail) {
   return {
     title: safeString(title, '🎬 Video'),
     body: safeString(body, ''),
-    thumbnail: thumbnail || Buffer.alloc(0),
+    thumbnail: thumbnail || Buffer.alloc(1), // mínimo 1 byte para evitar crash
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
@@ -123,13 +123,15 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
-    if (!cachedBotThumb) {
+    // Miniatura segura para evitar crash
+    if (!cachedBotThumb || cachedBotThumb.length === 0) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl)
-        cachedBotThumb = Buffer.from(await res.arrayBuffer())
+        const buf = Buffer.from(await res.arrayBuffer())
+        cachedBotThumb = buf.length > 0 ? buf : Buffer.alloc(1)
       } catch {
-        cachedBotThumb = Buffer.alloc(0)
+        cachedBotThumb = Buffer.alloc(1)
       }
     }
 
@@ -148,29 +150,29 @@ async function downloadVideo(url, isAudio, m, conn) {
     let vidInfo
     try {
       const res = await ytSearch(url)
-      vidInfo = res.videos?.[0] || { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null, views: 'N/A', timestamp: 'N/A' }
-    } catch {
-      vidInfo = { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null, views: 'N/A', timestamp: 'N/A' }
+      vidInfo = res.videos?.[0] || null
+    } catch {}
+
+    let thumbBuffer = cachedBotThumb
+    if (vidInfo?.thumbnail) {
+      try {
+        const res = await fetch(vidInfo.thumbnail)
+        const tmpBuf = Buffer.from(await res.arrayBuffer())
+        if (tmpBuf.length > 0) thumbBuffer = tmpBuf
+      } catch {}
     }
 
-    const thumbUrl = vidInfo.thumbnail || null
-    let thumbBuffer = cachedBotThumb
-    if (thumbUrl && !thumbBuffer?.length) {
-      try {
-        const res = await fetch(thumbUrl)
-        thumbBuffer = Buffer.from(await res.arrayBuffer())
-      } catch {
-        thumbBuffer = cachedBotThumb
-      }
-    }
+    if (!thumbBuffer || thumbBuffer.length === 0) thumbBuffer = Buffer.alloc(1)
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
-    caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
-    caption += `👤 *Autor:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
-    caption += `⏱️ *Duración:* ${safeString(vidInfo.timestamp)}\n`
-    caption += `👁️ *Visualizaciones:* ${safeString(vidInfo.views)}\n`
-    caption += `📺 *Canal:* ${safeString(vidInfo.author?.name, 'Desconocido')}\n`
-    caption += `🔗 *Link:* ${safeString(vidInfo.url)}\n`
+    if (vidInfo) {
+      caption += `📌 *Título:* ${safeString(vidInfo?.title)}\n`
+      caption += `👤 *Autor:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
+      caption += `⏱️ *Duración:* ${safeString(vidInfo?.timestamp)}\n`
+      caption += `👁️ *Visualizaciones:* ${safeString(vidInfo?.views)}\n`
+      caption += `📺 *Canal:* ${safeString(vidInfo?.author?.name, 'Desconocido')}\n`
+      caption += `🔗 *Link:* ${safeString(vidInfo?.url)}\n`
+    }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
     await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
@@ -189,22 +191,21 @@ async function downloadVideo(url, isAudio, m, conn) {
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
     const stream = fs.createReadStream(output)
+    if (!stream) return m.reply('⚠️ Error al leer el archivo')
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
-
-    const safeVidInfo = vidInfo || { title: 'Desconocido', author: { name: 'Desconocido' }, url: '', thumbnail: null }
 
     if (isAudio) {
       await conn.sendMessage(m.chat, {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(safeVidInfo.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
         caption: safeString(caption),
-        contextInfo: { externalAdReply: getExternalAdReply(safeVidInfo.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
       }, { quoted: m })
     }
 
