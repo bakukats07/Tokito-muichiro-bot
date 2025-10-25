@@ -21,7 +21,6 @@ const SELECTION_TIMEOUT = 20000
 const searchCache = new Map()
 const MAX_CACHE_ITEMS = 10
 
-// Actualiza yt-dlp cada 12h
 setInterval(() => execPromise('yt-dlp -U').catch(() => {}), 43200000)
 
 // ✅ Protección total contra undefined
@@ -141,11 +140,12 @@ async function downloadVideo(url, isAudio, m, conn) {
       try {
         const res = await fetch(vidInfo.thumbnail)
         const buf = Buffer.from(await res.arrayBuffer())
-        if (buf.length) thumbBuffer = buf
+        if (buf && buf.length) thumbBuffer = buf
       } catch {}
     }
 
     const safeThumb = thumbBuffer && thumbBuffer.length ? thumbBuffer : Buffer.alloc(0)
+
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
       caption += `📌 *Título:* ${safeString(vidInfo.title)}\n`
@@ -171,11 +171,8 @@ async function downloadVideo(url, isAudio, m, conn) {
       return m.reply('⚠️ No se pudo descargar el archivo.')
     }
 
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-
     const stream = fs.createReadStream(output)
     if (!stream) return m.reply('⚠️ Error al leer el archivo.')
-
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
     if (isAudio) {
@@ -194,6 +191,8 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
     stream.on('close', () => setTimeout(() => fs.promises.unlink(output).catch(() => {}), 5000))
+    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
   } catch (err) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     console.error('⚠️ Error inesperado:', err)
@@ -217,7 +216,7 @@ handler.before = async function (m, { conn }) {
 
   await downloadVideo(vid.url, data.isAudio, m, conn)
   delete searchResults[user]
-  return !0
+  return true
 }
 
 handler.help = ['play', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
