@@ -20,11 +20,15 @@ const SELECTION_TIMEOUT = 20000
 const searchCache = new Map()
 const MAX_CACHE_ITEMS = 10
 
-// Actualiza yt-dlp cada 12 horas
 setInterval(() => execPromise('yt-dlp', ['-U']).catch(() => {}), 43200000)
 
-// Protección contra undefined
-const safeString = (value, fallback = 'N/A') => (value ?? fallback).toString()
+const safeString = (value, fallback = 'N/A') => {
+  try {
+    return (value ?? fallback).toString()
+  } catch {
+    return fallback
+  }
+}
 
 async function fastSearch(query) {
   if (searchCache.has(query)) return searchCache.get(query)
@@ -47,10 +51,10 @@ function runYtDlp(args = []) {
       env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
     })
     let stderr = ''
-    ytdlp.stderr.on('data', chunk => (stderr += chunk.toString()))
+    ytdlp.stderr.on('data', chunk => (stderr += chunk?.toString() || ''))
     ytdlp.on('close', code => {
       if (code === 0) resolve()
-      else reject(new Error(stderr))
+      else reject(new Error(stderr || 'yt-dlp error desconocido'))
     })
   })
 }
@@ -59,7 +63,7 @@ function getExternalAdReply(title, body, thumbnail) {
   return {
     title: safeString(title, '🎬 Video'),
     body: safeString(body, ''),
-    thumbnail: thumbnail && thumbnail.length ? thumbnail : Buffer.alloc(0),
+    thumbnail: thumbnail && Buffer.isBuffer(thumbnail) && thumbnail.length ? thumbnail : Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
@@ -125,13 +129,13 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
 
     const baseArgs = [
-      '--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate',
-      '--quiet', '--no-cache-dir', '--buffer-size', '8M', '--concurrent-fragments', '2',
-      '--downloader', 'ffmpeg'
+      '--no-warnings','--no-progress','--no-call-home','--no-check-certificate',
+      '--quiet','--no-cache-dir','--buffer-size','8M','--concurrent-fragments','2',
+      '--downloader','ffmpeg'
     ]
 
     let vidInfo
-    try { vidInfo = (await ytSearch(url)).videos?.[0] || null } catch {}
+    try { vidInfo = (await ytSearch(url))?.videos?.[0] || null } catch { vidInfo = null }
 
     let thumbBuffer = cachedBotThumb
     if (vidInfo?.thumbnail) {
@@ -141,7 +145,7 @@ async function downloadVideo(url, isAudio, m, conn) {
         if (buf && buf.length) thumbBuffer = buf
       } catch {}
     }
-    const safeThumb = thumbBuffer && thumbBuffer.length ? thumbBuffer : Buffer.alloc(0)
+    const safeThumb = Buffer.isBuffer(thumbBuffer) && thumbBuffer.length ? thumbBuffer : Buffer.alloc(0)
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
@@ -157,10 +161,10 @@ async function downloadVideo(url, isAudio, m, conn) {
     await conn.sendMessage(m.chat, { image: safeThumb, caption: safeCaption }, { quoted: m })
 
     const args = isAudio
-      ? [...baseArgs, '-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
-      : [...baseArgs, '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]', '-o', output, url]
+      ? [...baseArgs, '-f','bestaudio[ext=webm][abr<=128]','--extract-audio','--audio-format','opus','-o',output,url]
+      : [...baseArgs, '-f','bestvideo[height<=480]+bestaudio[abr<=96]','-o',output,url]
 
-    await runYtDlp(args).catch(e => { throw new Error(`yt-dlp falló: ${e.message}`) })
+    await runYtDlp(args)
 
     if (!fs.existsSync(output) || fs.statSync(output).size === 0)
       return m.reply('⚠️ No se pudo descargar el archivo.')
@@ -173,13 +177,13 @@ async function downloadVideo(url, isAudio, m, conn) {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, safeCaption, safeThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(safeString(vidInfo?.title), safeCaption, safeThumb) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
         caption: safeCaption,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, safeCaption, safeThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(safeString(vidInfo?.title), safeCaption, safeThumb) }
       }, { quoted: m })
     }
 
@@ -212,7 +216,7 @@ handler.before = async function (m, { conn }) {
   return true
 }
 
-handler.help = ['play', 'ytaudio', 'audio', 'mp3', 'mp4', 'video']
+handler.help = ['play','ytaudio','audio','mp3','mp4','video']
 handler.tags = ['descargas']
 handler.command = /^(play|ytaudio|audio|mp3|mp4|video)$/i
 handler.limit = 1
