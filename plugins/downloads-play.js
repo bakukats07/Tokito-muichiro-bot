@@ -61,9 +61,9 @@ function runYtDlp(args = [], useStream = false) {
 
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title,
-    body,
-    thumbnail,
+    title: title?.toString() || '',
+    body: body?.toString() || '',
+    thumbnail: thumbnail || Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
@@ -126,31 +126,35 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
-    // ⚡ Miniatura cacheada en disco solo una vez
+    // ⚡ Miniatura cacheada
     if (!cachedBotThumb) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl, { timeout: 3000 })
         cachedBotThumb = Buffer.from(await res.arrayBuffer())
       } catch {
-        cachedBotThumb = null
+        cachedBotThumb = Buffer.alloc(0)
       }
     }
 
-    // 🔧 yt-dlp optimizado con downloader ffmpeg (más estable)
+    // 🔧 yt-dlp ultrarrápido (usa aria2c si está disponible)
     const baseArgs = [
       '--no-warnings',
       '--no-progress',
       '--no-call-home',
       '--no-check-certificate',
-      '--quiet',
       '--no-cache-dir',
-      '--buffer-size', '8M',
-      '--concurrent-fragments', '2',
-      '--downloader', 'ffmpeg'
+      '--no-mtime',
+      '--no-playlist',
+      '--no-colors',
+      '--quiet',
+      '--buffer-size', '16M',
+      '--retries', '2',
+      '--fragment-retries', '1',
+      '--concurrent-fragments', '6',
+      '--downloader', 'aria2c,ffmpeg'
     ]
 
-    // 📄 Obtiene solo info básica
     let vidInfo
     try {
       const res = await ytSearch(url)
@@ -159,11 +163,13 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     const thumbUrl = vidInfo?.thumbnail || null
     let thumbBuffer = cachedBotThumb
-    if (thumbUrl && !thumbBuffer) {
+    if (thumbUrl && !thumbBuffer?.length) {
       try {
         const res = await fetch(thumbUrl, { timeout: 3000 })
         thumbBuffer = Buffer.from(await res.arrayBuffer())
-      } catch {}
+      } catch {
+        thumbBuffer = cachedBotThumb
+      }
     }
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
@@ -180,10 +186,12 @@ async function downloadVideo(url, isAudio, m, conn) {
     await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
 
     const args = isAudio
-      ? [...baseArgs, '-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
+      ? [...baseArgs, '-f', 'bestaudio[abr<=128][ext=webm]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
       : [...baseArgs, '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]', '-o', output, url]
 
-    await runYtDlp(args)
+    await runYtDlp(args).catch(e => {
+      throw new Error(`yt-dlp falló: ${e.message}`)
+    })
 
     if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
@@ -192,23 +200,25 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
-    // 🎧 Envío directo por stream (sin cargar en memoria)
     const stream = fs.createReadStream(output)
+    stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
+
     if (isAudio) {
       await conn.sendMessage(m.chat, {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, cachedBotThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, thumbBuffer) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
-        caption,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, cachedBotThumb) }
+        caption: caption.toString(),
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, thumbBuffer) }
       }, { quoted: m })
     }
 
+    // 🧹 Limpieza más rápida
     stream.on('close', () => fs.promises.unlink(output).catch(() => {}))
 
   } catch (err) {
