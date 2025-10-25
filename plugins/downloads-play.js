@@ -15,7 +15,9 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
 const CREATOR_SIGNATURE = '\n\n🎧 Creado por: Bakukats07 💻'
 const searchResults = {}
+const selectionTimeouts = {} // ⏱️ Guardar timeout por usuario
 let cachedBotThumb = null // 🧠 Cache de la miniatura del bot
+const SELECTION_TIMEOUT = 20000 // ⏱️ Tiempo de espera 20s
 
 // 🧩 Autoactualiza yt-dlp cada 12 h
 setInterval(async () => {
@@ -73,14 +75,15 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       })
       m.reply(msg)
 
-      // ⏱️ Tiempo máximo de respuesta: 10 segundos
-      setTimeout(() => {
+      // ⏱️ Tiempo máximo de respuesta
+      if (selectionTimeouts[m.sender]) clearTimeout(selectionTimeouts[m.sender])
+      selectionTimeouts[m.sender] = setTimeout(() => {
         if (searchResults[m.sender]) {
           delete searchResults[m.sender]
+          delete selectionTimeouts[m.sender]
           conn.sendMessage(m.chat, { text: '⌛ Tiempo de selección expirado. Por favor, usa el comando nuevamente.' }, { quoted: m })
         }
-      }, 10000)
-
+      }, SELECTION_TIMEOUT)
     } else {
       await downloadVideo(text, isAudio, m, conn)
     }
@@ -90,7 +93,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada con ficha integrada
+// ⚙️ Descarga optimizada con ficha integrada en el mensaje final
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
@@ -111,12 +114,16 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     const baseArgs = ['--no-warnings', '--no-progress', '--no-call-home', '--no-check-certificate']
 
-    // 🔍 Obtener info del video/audio para la ficha
+    // 🔍 Obtener info del video/audio
     let vidInfo = null
     try {
       const infoSearch = await ytSearch(url)
       vidInfo = infoSearch.videos?.[0] || null
     } catch {}
+
+    const caption = vidInfo
+      ? `${isAudio ? '🎧' : '🎬'} ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
+      : `${isAudio ? '🎧 Audio' : '🎬 Video'} descargado${CREATOR_SIGNATURE}`
 
     if (isAudio) {
       const args = [
@@ -126,13 +133,8 @@ async function downloadVideo(url, isAudio, m, conn) {
         '-o', output,
         url
       ]
-
       await runYtDlp(args)
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el audio.')
-
-      const caption = vidInfo
-        ? `🎧 ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
-        : `🎧 Audio descargado${CREATOR_SIGNATURE}`
 
       await conn.sendMessage(m.chat, {
         audio: { url: output },
@@ -141,8 +143,6 @@ async function downloadVideo(url, isAudio, m, conn) {
         contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, botThumb) }
       }, { quoted: m })
 
-      setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
-
     } else {
       const args = [
         ...baseArgs,
@@ -150,22 +150,18 @@ async function downloadVideo(url, isAudio, m, conn) {
         '-o', output,
         url
       ]
-
       await runYtDlp(args)
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) return m.reply('⚠️ No se pudo descargar el video.')
-
-      const caption = vidInfo
-        ? `🎬 ${vidInfo.title}\nAutor: ${vidInfo.author?.name || 'Desconocido'}\nDuración: ${vidInfo.timestamp || 'N/A'}\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
-        : `🎬 Video descargado${CREATOR_SIGNATURE}`
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
         caption,
         contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, botThumb) }
       }, { quoted: m })
-
-      setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
     }
+
+    // Limpiar archivo temporal después de 30s
+    setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
 
   } catch (err) {
     console.error('⚠️ Error inesperado:', err)
@@ -182,6 +178,13 @@ handler.before = async function (m, { conn }) {
   const num = parseInt(text)
   if (isNaN(num) || num < 1 || num > data.videos.length) return
   const vid = data.videos[num - 1]
+
+  // ✅ Cancelar timeout si el usuario respondió
+  if (selectionTimeouts[user]) {
+    clearTimeout(selectionTimeouts[user])
+    delete selectionTimeouts[user]
+  }
+
   await downloadVideo(vid.url, data.isAudio, m, conn)
   delete searchResults[user]
   return !0
