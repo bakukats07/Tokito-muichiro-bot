@@ -134,7 +134,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       caption += `📺 *Canal:* ${vidInfo.author?.name || 'Desconocido'}\n`
       caption += `🔗 *Link:* ${vidInfo.url}\n`
     }
-    caption += `\nDescargado con yt-dlp${CREATOR_SIGNATURE}`
+    caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
     // 🖼️ Enviar mensaje con imagen + datos antes de descargar
     await conn.sendMessage(m.chat, {
