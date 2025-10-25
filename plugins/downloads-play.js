@@ -137,7 +137,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       }
     }
 
-    // 🔧 yt-dlp optimizado para uso reducido de RAM
+    // 🔧 yt-dlp optimizado con downloader ffmpeg (más estable)
     const baseArgs = [
       '--no-warnings',
       '--no-progress',
@@ -147,7 +147,7 @@ async function downloadVideo(url, isAudio, m, conn) {
       '--no-cache-dir',
       '--buffer-size', '8M',
       '--concurrent-fragments', '2',
-      '--downloader', 'm3u8_native'
+      '--downloader', 'ffmpeg'
     ]
 
     // 📄 Obtiene solo info básica
@@ -209,7 +209,6 @@ async function downloadVideo(url, isAudio, m, conn) {
       }, { quoted: m })
     }
 
-    // 🧹 Eliminación inmediata y silenciosa
     stream.on('close', () => fs.promises.unlink(output).catch(() => {}))
 
   } catch (err) {
