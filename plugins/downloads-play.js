@@ -53,8 +53,8 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     return m.reply(`🎵 Ejemplo:\n${usedPrefix + command} Despacito\nO pega un link de YouTube.`)
   }
 
-  // 🕐 Enviar emoji de espera (solo emoji)
-  const statusMsg = await conn.sendMessage(m.chat, { text: '⏳' }, { quoted: m })
+  // ⏳ Reacción inicial
+  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
 
   const isAudio = ['play', 'ytaudio', 'audio', 'mp3'].includes(command.toLowerCase())
   const text = args.join(' ')
@@ -65,7 +65,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       const videos = (search.videos?.length ? search.videos : search.all || [])
         .filter(v => !v.isLive && v.seconds > 0)
       if (!videos.length) {
-        await conn.sendMessage(m.chat, { text: '❌' }, { quoted: statusMsg.key })
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se encontró ningún video válido para descargar.')
       }
 
@@ -87,21 +87,23 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
         }
       }, SELECTION_TIMEOUT)
 
-      // ✅ Cambia emoji al recibir opciones
-      await conn.sendMessage(m.chat, { edit: '✅' }, { quoted: statusMsg.key })
+      // ✅ Reacción de éxito
+      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     } else {
-      await downloadVideo(text, isAudio, m, conn, statusMsg)
+      await downloadVideo(text, isAudio, m, conn)
     }
   } catch (err) {
     console.error('❌ Error en downloads-play:', err)
-    await conn.sendMessage(m.chat, { edit: '❌' }, { quoted: statusMsg.key })
+    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     m.reply('⚠️ Hubo un error al procesar la descarga. Intenta con otro video.')
   }
 }
 
-// ⚙️ Descarga optimizada con ficha + emoji de estado
-async function downloadVideo(url, isAudio, m, conn, statusMsg) {
+// ⚙️ Descarga optimizada con ficha + reacciones
+async function downloadVideo(url, isAudio, m, conn) {
   try {
+    await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
+
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
@@ -141,11 +143,7 @@ async function downloadVideo(url, isAudio, m, conn, statusMsg) {
     }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
-    // Enviar ficha con info antes de descarga
     await conn.sendMessage(m.chat, { image: thumbBuffer || botThumb, caption }, { quoted: m })
-
-    // 🔄 Mantiene ⏳ hasta este punto
-    await conn.sendMessage(m.chat, { edit: '⏳' }, { quoted: statusMsg.key })
 
     if (isAudio) {
       const args = [
@@ -157,12 +155,11 @@ async function downloadVideo(url, isAudio, m, conn, statusMsg) {
       ]
       await runYtDlp(args)
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
-        await conn.sendMessage(m.chat, { edit: '❌' }, { quoted: statusMsg.key })
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se pudo descargar el audio.')
       }
 
-      // ✅ justo antes de enviar
-      await conn.sendMessage(m.chat, { edit: '✅' }, { quoted: statusMsg.key })
+      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
       await conn.sendMessage(m.chat, {
         audio: { url: output },
@@ -179,12 +176,11 @@ async function downloadVideo(url, isAudio, m, conn, statusMsg) {
       ]
       await runYtDlp(args)
       if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
-        await conn.sendMessage(m.chat, { edit: '❌' }, { quoted: statusMsg.key })
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
         return m.reply('⚠️ No se pudo descargar el video.')
       }
 
-      // ✅ justo antes de enviar
-      await conn.sendMessage(m.chat, { edit: '✅' }, { quoted: statusMsg.key })
+      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
       await conn.sendMessage(m.chat, {
         video: { url: output },
@@ -196,7 +192,7 @@ async function downloadVideo(url, isAudio, m, conn, statusMsg) {
     setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
 
   } catch (err) {
-    await conn.sendMessage(m.chat, { edit: '❌' }, { quoted: statusMsg.key })
+    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     console.error('⚠️ Error inesperado:', err)
     m.reply('⚠️ No se pudo descargar este video. Prueba con otro enlace o título.')
   }
