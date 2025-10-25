@@ -62,7 +62,7 @@ function getExternalAdReply(title, body, thumbnail) {
   return {
     title: safeString(title, '🎬 Video'),
     body: safeString(body, ''),
-    thumbnail: thumbnail || Buffer.alloc(1), // mínimo 1 byte para evitar crash
+    thumbnail: thumbnail || Buffer.alloc(1),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
@@ -123,13 +123,12 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
-    // Miniatura segura para evitar crash
-    if (!cachedBotThumb || cachedBotThumb.length === 0) {
+    if (!cachedBotThumb) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl)
         const buf = Buffer.from(await res.arrayBuffer())
-        cachedBotThumb = buf.length > 0 ? buf : Buffer.alloc(1)
+        if (buf.length > 0) cachedBotThumb = buf
       } catch {
         cachedBotThumb = Buffer.alloc(1)
       }
@@ -153,16 +152,16 @@ async function downloadVideo(url, isAudio, m, conn) {
       vidInfo = res.videos?.[0] || null
     } catch {}
 
+    const thumbUrl = vidInfo?.thumbnail || null
     let thumbBuffer = cachedBotThumb
-    if (vidInfo?.thumbnail) {
+    if (thumbUrl) {
       try {
-        const res = await fetch(vidInfo.thumbnail)
+        const res = await fetch(thumbUrl)
         const tmpBuf = Buffer.from(await res.arrayBuffer())
         if (tmpBuf.length > 0) thumbBuffer = tmpBuf
       } catch {}
     }
-
-    if (!thumbBuffer || thumbBuffer.length === 0) thumbBuffer = Buffer.alloc(1)
+    if (!thumbBuffer || !thumbBuffer.length) thumbBuffer = Buffer.alloc(1) // fallback seguro
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
@@ -190,8 +189,8 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
-    const stream = fs.createReadStream(output)
-    if (!stream) return m.reply('⚠️ Error al leer el archivo')
+    const stream = fs.existsSync(output) ? fs.createReadStream(output) : null
+    if (!stream) return m.reply('⚠️ Error al leer el archivo.')
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
     if (isAudio) {
