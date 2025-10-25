@@ -19,36 +19,43 @@ const selectionTimeouts = {}
 let cachedBotThumb = null
 const SELECTION_TIMEOUT = 20000
 
-// ⚡ Nueva cache de búsquedas para respuestas instantáneas
+// ⚡ Cache de búsquedas limitada y ligera
 const searchCache = new Map()
+const MAX_CACHE_ITEMS = 10
 
-// 🔄 Auto actualización de yt-dlp cada 12h
-setInterval(async () => {
-  try { await execPromise('yt-dlp -U') } catch {}
-}, 43200000)
+// 🔄 Actualización automática yt-dlp cada 12h (asíncrona y silenciosa)
+setInterval(() => execPromise('yt-dlp -U').catch(() => {}), 43200000)
 
-// 🚀 Función optimizada de búsqueda (usa cache temporal)
+// 🚀 Búsqueda rápida sin bloqueo y con límite de caché
 async function fastSearch(query) {
   if (searchCache.has(query)) return searchCache.get(query)
-  const result = await ytSearch(query)
-  searchCache.set(query, result)
-  setTimeout(() => searchCache.delete(query), 5 * 60 * 1000) // Cache 5 min
-  return result
+  const resultPromise = ytSearch(query)
+  searchCache.set(query, resultPromise)
+  if (searchCache.size > MAX_CACHE_ITEMS) {
+    const firstKey = searchCache.keys().next().value
+    searchCache.delete(firstKey)
+  }
+  resultPromise.finally(() => setTimeout(() => searchCache.delete(query), 3 * 60 * 1000))
+  return resultPromise
 }
 
+// ⚙️ Ejecución de yt-dlp con uso mínimo de RAM
 function runYtDlp(args = [], useStream = false) {
   return new Promise((resolve, reject) => {
-    const ytdlp = spawn('yt-dlp', args)
+    const ytdlp = spawn('yt-dlp', args, {
+      stdio: useStream ? 'pipe' : ['ignore', 'ignore', 'pipe'],
+      detached: false,
+      windowsHide: true,
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    })
     let stderr = ''
     if (!useStream) {
-      ytdlp.stderr.on('data', chunk => stderr += chunk.toString())
+      ytdlp.stderr.on('data', chunk => (stderr += chunk.toString()))
       ytdlp.on('close', code => {
         if (code === 0) resolve()
         else reject(new Error(stderr))
       })
-    } else {
-      resolve(ytdlp)
-    }
+    } else resolve(ytdlp)
   })
 }
 
@@ -74,7 +81,6 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   try {
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//
 
-    // 🚀 Usa búsqueda rápida (cacheada)
     if (!ytRegex.test(text)) {
       const search = await fastSearch(text)
       const videos = (search.videos?.length ? search.videos : search.all || [])
@@ -89,21 +95,18 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       searchResults[m.sender] = { videos: top5, isAudio }
 
       let msg = '🎬 *Selecciona el video que quieres descargar respondiendo con el número:*\n\n'
-      top5.forEach((v, i) => {
+      for (const [i, v] of top5.entries()) {
         msg += `*${i + 1}.* ${v.title}\n📺 ${v.author.name}  ⏱️ ${v.timestamp}\n\n`
-      })
+      }
+
       await conn.sendMessage(m.chat, { text: msg }, { quoted: m })
 
       if (selectionTimeouts[m.sender]) clearTimeout(selectionTimeouts[m.sender])
       selectionTimeouts[m.sender] = setTimeout(() => {
-        if (searchResults[m.sender]) {
-          delete searchResults[m.sender]
-          delete selectionTimeouts[m.sender]
-          conn.sendMessage(m.chat, { text: '⌛ Tiempo de selección expirado. Por favor, usa el comando nuevamente.' }, { quoted: m })
-        }
+        delete searchResults[m.sender]
+        delete selectionTimeouts[m.sender]
       }, SELECTION_TIMEOUT)
 
-      // ✅ Reacción de éxito
       await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     } else {
       await downloadVideo(text, isAudio, m, conn)
@@ -115,7 +118,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   }
 }
 
-// ⚙️ Descarga optimizada con ficha + reacciones
+// ⚙️ Descarga con bajo consumo de memoria y espacio
 async function downloadVideo(url, isAudio, m, conn) {
   try {
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
@@ -123,38 +126,44 @@ async function downloadVideo(url, isAudio, m, conn) {
     const tmpBase = path.join(tmpDir, `${Date.now()}`)
     const output = isAudio ? `${tmpBase}.opus` : `${tmpBase}.mp4`
 
-    // ⚡ Miniatura cacheada para no pedirla varias veces
-    let botThumb = cachedBotThumb
-    if (!botThumb) {
+    // ⚡ Miniatura cacheada en disco solo una vez
+    if (!cachedBotThumb) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
-        const res = await fetch(botPicUrl)
-        botThumb = Buffer.from(await res.arrayBuffer())
-        cachedBotThumb = botThumb
-      } catch { botThumb = null }
+        const res = await fetch(botPicUrl, { timeout: 3000 })
+        cachedBotThumb = Buffer.from(await res.arrayBuffer())
+      } catch {
+        cachedBotThumb = null
+      }
     }
 
-    // 🔧 Argumentos de yt-dlp optimizados con buffer y menor peso
+    // 🔧 yt-dlp optimizado para uso reducido de RAM
     const baseArgs = [
       '--no-warnings',
       '--no-progress',
       '--no-call-home',
       '--no-check-certificate',
-      '--buffer-size', '16M'
+      '--quiet',
+      '--no-cache-dir',
+      '--buffer-size', '8M',
+      '--concurrent-fragments', '2',
+      '--downloader', 'm3u8_native'
     ]
 
-    let vidInfo = null
+    // 📄 Obtiene solo info básica
+    let vidInfo
     try {
-      const infoSearch = await ytSearch(url)
-      vidInfo = infoSearch.videos?.[0] || null
+      const res = await ytSearch(url)
+      vidInfo = res.videos?.[0] || null
     } catch {}
 
-    let thumbBuffer = null
-    if (vidInfo?.thumbnail) {
+    const thumbUrl = vidInfo?.thumbnail || null
+    let thumbBuffer = cachedBotThumb
+    if (thumbUrl && !thumbBuffer) {
       try {
-        const res = await fetch(vidInfo.thumbnail)
+        const res = await fetch(thumbUrl, { timeout: 3000 })
         thumbBuffer = Buffer.from(await res.arrayBuffer())
-      } catch { thumbBuffer = null }
+      } catch {}
     }
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
@@ -168,60 +177,40 @@ async function downloadVideo(url, isAudio, m, conn) {
     }
     caption += `\nDescargando... MλÐɆ ƗN 스카이클라우드${CREATOR_SIGNATURE}`
 
-    await conn.sendMessage(m.chat, { image: thumbBuffer || botThumb, caption }, { quoted: m })
+    await conn.sendMessage(m.chat, { image: thumbBuffer, caption }, { quoted: m })
 
-    // 🚀 Paraleliza preparación y descarga
+    const args = isAudio
+      ? [...baseArgs, '-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', output, url]
+      : [...baseArgs, '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]', '-o', output, url]
+
+    await runYtDlp(args)
+
+    if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
+      await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+      return m.reply('⚠️ No se pudo descargar el archivo.')
+    }
+
+    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
+    // 🎧 Envío directo por stream (sin cargar en memoria)
+    const stream = fs.createReadStream(output)
     if (isAudio) {
-      const args = [
-        ...baseArgs,
-        '-f', 'bestaudio[ext=webm][abr<=128]',
-        '--extract-audio', '--audio-format', 'opus',
-        '-o', output,
-        url
-      ]
-      const downloadPromise = runYtDlp(args)
-
-      await Promise.all([downloadPromise]) // Mantiene proceso paralelo
-      if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
-        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-        return m.reply('⚠️ No se pudo descargar el audio.')
-      }
-
-      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-
       await conn.sendMessage(m.chat, {
-        audio: { url: output },
+        audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, botThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎧 Audio', caption, cachedBotThumb) }
       }, { quoted: m })
     } else {
-      const args = [
-        ...baseArgs,
-        // ⚡ Resolución ajustada para enviar más rápido
-        '-f', 'bestvideo[height<=480]+bestaudio[abr<=96]',
-        '-o', output,
-        url
-      ]
-      const downloadPromise = runYtDlp(args)
-
-      await Promise.all([downloadPromise])
-      if (!fs.existsSync(output) || fs.statSync(output).size === 0) {
-        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-        return m.reply('⚠️ No se pudo descargar el video.')
-      }
-
-      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-
       await conn.sendMessage(m.chat, {
-        video: { url: output },
+        video: stream,
         caption,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, botThumb) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title || '🎬 Video', caption, cachedBotThumb) }
       }, { quoted: m })
     }
 
-    // 🧹 Limpieza automática
-    setTimeout(() => { try { fs.unlinkSync(output) } catch {} }, 30000)
+    // 🧹 Eliminación inmediata y silenciosa
+    stream.on('close', () => fs.promises.unlink(output).catch(() => {}))
 
   } catch (err) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
