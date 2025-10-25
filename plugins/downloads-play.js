@@ -58,11 +58,12 @@ function runYtDlp(args = [], useStream = false) {
   })
 }
 
+// 🔹 Mejora: protección de valores undefined
 function getExternalAdReply(title, body, thumbnail) {
   return {
-    title: safeString(title, '🎬 Video'),
-    body: safeString(body, ''),
-    thumbnail: thumbnail || Buffer.alloc(1),
+    title: (title ?? '🎬 Video').toString(),
+    body: (body ?? '').toString(),
+    thumbnail: thumbnail && thumbnail.length ? thumbnail : Buffer.alloc(0),
     sourceUrl: 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
   }
 }
@@ -127,10 +128,9 @@ async function downloadVideo(url, isAudio, m, conn) {
       try {
         const botPicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
         const res = await fetch(botPicUrl)
-        const buf = Buffer.from(await res.arrayBuffer())
-        if (buf.length > 0) cachedBotThumb = buf
+        cachedBotThumb = Buffer.from(await res.arrayBuffer())
       } catch {
-        cachedBotThumb = Buffer.alloc(1)
+        cachedBotThumb = Buffer.alloc(0)
       }
     }
 
@@ -153,15 +153,16 @@ async function downloadVideo(url, isAudio, m, conn) {
     } catch {}
 
     const thumbUrl = vidInfo?.thumbnail || null
-    let thumbBuffer = cachedBotThumb
+    let thumbBuffer = cachedBotThumb || Buffer.alloc(0)
     if (thumbUrl) {
       try {
         const res = await fetch(thumbUrl)
-        const tmpBuf = Buffer.from(await res.arrayBuffer())
-        if (tmpBuf.length > 0) thumbBuffer = tmpBuf
-      } catch {}
+        const buf = Buffer.from(await res.arrayBuffer())
+        if (buf.length) thumbBuffer = buf
+      } catch {
+        thumbBuffer = cachedBotThumb || Buffer.alloc(0)
+      }
     }
-    if (!thumbBuffer || !thumbBuffer.length) thumbBuffer = Buffer.alloc(1) // fallback seguro
 
     let caption = `${isAudio ? '🎧 Procesando audio' : '🎬 Procesando video'}:\n\n`
     if (vidInfo) {
@@ -189,8 +190,7 @@ async function downloadVideo(url, isAudio, m, conn) {
 
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
-    const stream = fs.existsSync(output) ? fs.createReadStream(output) : null
-    if (!stream) return m.reply('⚠️ Error al leer el archivo.')
+    const stream = fs.createReadStream(output)
     stream.on('error', err => console.error('⚠️ Error al leer el archivo:', err))
 
     if (isAudio) {
@@ -198,13 +198,13 @@ async function downloadVideo(url, isAudio, m, conn) {
         audio: stream,
         mimetype: 'audio/ogg; codecs=opus',
         ptt: true,
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title ?? '🎬 Video', caption, thumbBuffer) }
       }, { quoted: m })
     } else {
       await conn.sendMessage(m.chat, {
         video: stream,
         caption: safeString(caption),
-        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title, caption, thumbBuffer) }
+        contextInfo: { externalAdReply: getExternalAdReply(vidInfo?.title ?? '🎬 Video', caption, thumbBuffer) }
       }, { quoted: m })
     }
 
