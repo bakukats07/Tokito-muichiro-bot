@@ -1,173 +1,118 @@
-// ─────────────────────────────────────────────
-// TokitoBot | Base modular con Baileys MD
-// by: Skycloud ✨
-// ─────────────────────────────────────────────
+/**
+ * Tokito Muichiro Bot — v1.8.2
+ * Desarrollado y adaptado por: Skycloud🐼
+ * Compatible con estructuras remodeladas 2025
+ */
 
-import fs from "fs"
-import path from "path"
-import chalk from "chalk"
-import { execSync } from "child_process"
-import { fileURLToPath } from "url"
-import makeWASocket, {
+import './settings.js'
+import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
+import { join, dirname } from 'path'
+import fs from 'fs'
+import chalk from 'chalk'
+import { Boom } from '@hapi/boom'
+import P from 'pino'
+import pkg from '@whiskeysockets/baileys'
+import { smsg } from './lib/simple.js'
+
+const {
+  default: makeWASocket,
   useMultiFileAuthState,
-  DisconnectReason
-} from "@whiskeysockets/baileys"
-import Pino from "pino"
-import { config } from "./config.js"
-import { Boom } from "@hapi/boom"
+  DisconnectReason,
+  fetchLatestBaileysVersion
+} = pkg
 
-// ─────────────────────────────────────────────
-// 🧭 VARIABLES BASE
-// ─────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const { prefix: PREFIX, owner: OWNER, botName, autoread, autoTyping } = config
+const __dirname = dirname(__filename)
+const require = createRequire(import.meta.url)
 
-// ─────────────────────────────────────────────
-// 🧩 AUTO-CREAR CARPETAS NECESARIAS
-// ─────────────────────────────────────────────
-const folders = ["./session", "./plugins", "./lib", "./tmp", "./data"]
-for (const dir of folders) if (!fs.existsSync(dir)) fs.mkdirSync(dir)
-if (!fs.existsSync("./data/banned.json")) fs.writeFileSync("./data/banned.json", "[]")
+global.APIKeys = new Map()
+global.plugins = {}
+global.db = { data: { users: {}, chats: {}, settings: {} } }
 
-// ─────────────────────────────────────────────
-// 🔧 AUTO-INSTALADOR DE DEPENDENCIAS
-// ─────────────────────────────────────────────
-const pkg = ["@whiskeysockets/baileys", "chalk", "pino", "@hapi/boom"]
-for (const p of pkg) {
-  try {
-    require.resolve(p)
-  } catch {
-    console.log(chalk.yellow(`📦 Instalando dependencia faltante: ${p}`))
-    execSync(`npm install ${p}`, { stdio: "inherit" })
+global.loadDatabase = async function () {
+  const dbFile = './database.json'
+  if (fs.existsSync(dbFile)) {
+    global.db.data = JSON.parse(fs.readFileSync(dbFile))
+  } else {
+    fs.writeFileSync(dbFile, JSON.stringify(global.db.data, null, 2))
   }
 }
 
-// ─────────────────────────────────────────────
-// 📂 CARGADOR DE PLUGINS
-// ─────────────────────────────────────────────
-const plugins = new Map()
-const loadPlugins = () => {
-  plugins.clear()
-  const files = fs.readdirSync("./plugins").filter(f => f.endsWith(".js"))
+global.saveDatabase = async function () {
+  fs.writeFileSync('./database.json', JSON.stringify(global.db.data, null, 2))
+}
+
+// Carga dinámica de plugins
+async function loadPlugins() {
+  const folder = join(__dirname, 'plugins')
+  const files = fs.readdirSync(folder).filter(f => f.endsWith('.js'))
   for (const file of files) {
-    import(`./plugins/${file}?update=${Date.now()}`)
-      .then(p => plugins.set(file, p.default))
-      .catch(err => console.log(chalk.red(`❌ Error cargando ${file}:`), err))
+    try {
+      const pluginPath = join(folder, file)
+      const plugin = (await import(`file://${pluginPath}?update=${Date.now()}`)).default
+      global.plugins[file] = plugin
+      console.log(chalk.green(`✓ Plugin cargado: ${file}`))
+    } catch (e) {
+      console.log(chalk.red(`✗ Error al cargar el plugin ${file}:`), e)
+    }
   }
-  console.log(chalk.green(`✅ ${plugins.size} plugins cargados.`))
 }
-loadPlugins()
 
-// Reload automático si cambias un plugin
-fs.watch("./plugins", (event, filename) => {
-  if (filename && filename.endsWith(".js")) {
-    console.log(chalk.yellow(`♻️ Plugin actualizado: ${filename}`))
-    loadPlugins()
-  }
-})
-
-// ─────────────────────────────────────────────
-// 🤖 INICIO DEL BOT
-// ─────────────────────────────────────────────
+// Función principal
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState("./session")
+  await global.loadDatabase()
+  const { state, saveCreds } = await useMultiFileAuthState('./session')
+  const { version, isLatest } = await fetchLatestBaileysVersion()
+  const logger = P({ level: 'silent' })
 
   const conn = makeWASocket({
+    version,
     printQRInTerminal: true,
     auth: state,
-    logger: Pino({ level: "silent" }),
-    browser: [botName, "Chrome", "1.0.0"]
+    logger,
+    browser: ['Tokito-Muichiro-Bot', 'Safari', '1.8.2']
   })
 
-  // Guardar sesión
-  conn.ev.on("creds.update", saveCreds)
-
-  // Manejo de desconexiones
-  conn.ev.on("connection.update", async update => {
+  conn.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update
-    if (connection === "close") {
-      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
-      console.log(chalk.red(`⚠️ Desconexión detectada — código: ${reason}`))
-      if (reason !== DisconnectReason.loggedOut) {
-        console.log(chalk.cyan("🔄 Reintentando conexión..."))
-        startBot()
-      } else {
-        console.log(chalk.red("🔒 Sesión cerrada. Escanea el QR nuevamente."))
-      }
-    } else if (connection === "open") {
-      console.log(chalk.green(`✅ ${botName} conectado exitosamente.`))
+    if (connection === 'close') {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+      console.log(chalk.yellowBright('⚠️ Conexión cerrada. Reconectando...'))
+      if (shouldReconnect) startBot()
+      else console.log(chalk.red('❌ Sesión cerrada definitivamente.'))
+    } else if (connection === 'open') {
+      console.log(chalk.greenBright('✅ Bot conectado correctamente.'))
     }
   })
 
-  // ─────────────────────────────────────────────
-  // 💬 MANEJO DE MENSAJES
-  // ─────────────────────────────────────────────
-  conn.ev.on("messages.upsert", async ({ messages }) => {
-    const msg = messages[0]
-    if (!msg.message) return
-
-    const sender = msg.key.remoteJid
-    const body =
-      msg.message.conversation ||
-      msg.message.extendedTextMessage?.text ||
-      msg.message.imageMessage?.caption ||
-      ""
-
-    // ─────────────────────────────────────────────
-    // 🏷️ DETECCIÓN DE PREFIJOS MÚLTIPLES
-    // ─────────────────────────────────────────────
-    const prefixes = Array.isArray(PREFIX) ? PREFIX : [PREFIX]
-    const usedPrefix = prefixes.find(p => body.startsWith(p)) || null
-    const isCmd = !!usedPrefix
-    const command = isCmd ? body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase() : ""
-    const args = body.trim().split(/ +/).slice(1)
-
-    // Auto leer o escribir
-    if (autoread) await conn.readMessages([msg.key])
-    if (autoTyping) await conn.sendPresenceUpdate("composing", sender)
-
-    if (!isCmd) return
-
-    // Verificar si está baneado
-    const banned = JSON.parse(fs.readFileSync("./data/banned.json"))
-    if (banned.includes(sender)) return
-
-    // ─────────────────────────────────────────────
-    // ⚡ EJECUTAR PLUGIN CORRESPONDIENTE
-    // ─────────────────────────────────────────────
-    for (const [name, plugin] of plugins) {
-      if (plugin.command?.includes(command)) {
-        if (plugin.ownerOnly && !OWNER.includes(sender))
-          return conn.sendMessage(sender, { text: "🚫 Solo el propietario puede usar este comando." })
-
-        try {
-          await plugin.run(msg, { conn, args, sender, usedPrefix, command })
-        } catch (err) {
-          console.error(chalk.red(`❌ Error en ${name}:`), err)
-          conn.sendMessage(sender, { text: "⚠️ Error ejecutando comando." })
-        }
-        return
-      }
+  conn.ev.on('creds.update', saveCreds)
+  conn.ev.on('messages.upsert', async ({ messages }) => {
+    try {
+      const m = smsg(conn, messages[0])
+      if (!m.message) return
+      await (await import('./handler.js')).handler.call(conn, { messages: [m] })
+    } catch (err) {
+      console.error(chalk.red('Error en mensajes.upsert:'), err)
     }
   })
 }
 
+// Observa cambios en archivos para recargar
+let files = ['./handler.js', './settings.js']
+for (let file of files) {
+  fs.watchFile(file, async () => {
+    fs.unwatchFile(file)
+    console.log(chalk.cyan(`🔄 ${file} actualizado, recargando módulo...`))
+    if (file === './handler.js') {
+      delete import.cache[file]
+      await import(`file://${join(__dirname, 'handler.js')}?update=${Date.now()}`)
+    } else {
+      await import(`file://${join(__dirname, 'settings.js')}?update=${Date.now()}`)
+    }
+  })
+}
+
+await loadPlugins()
 startBot()
-
-// ─────────────────────────────────────────────
-// 🛡️ MANEJO GLOBAL DE ERRORES
-// ─────────────────────────────────────────────
-process.on("uncaughtException", err => {
-  console.error(chalk.red("❌ Error no controlado:"), err)
-})
-
-process.on("unhandledRejection", err => {
-  console.error(chalk.red("⚠️ Promesa rechazada sin capturar:"), err)
-}) que 
-
-// Auto reinicio en cambios del index
-fs.watchFile(__filename, () => {
-  console.log(chalk.yellow("♻️ Reiniciando el bot por cambios en index.js..."))
-  process.exit()
-})
