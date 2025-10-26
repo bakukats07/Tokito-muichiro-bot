@@ -7,15 +7,14 @@ import pkg from '@whiskeysockets/baileys'
 import { fileURLToPath } from 'url'
 import { Boom } from '@hapi/boom'
 import { authMethod, phoneNumber, prefixes } from './settings.js'
-import helper from './lib/helper.js'
+import { isReadableStream, checkFileExists } from './lib/helper.js' // ✅ Import nombrado seguro
 
-const { __dirname } = helper
 const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, DisconnectReason } = pkg
 
 // ───────────── Rutas de sesión ─────────────
 const __filename = fileURLToPath(import.meta.url)
-const dir = __dirname(import.meta.url)
-const sessionPath = path.join(dir, 'sessions')
+const __dirname = path.dirname(__filename)
+const sessionPath = path.join(__dirname, 'sessions')
 if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true })
 
 // ───────────── Función principal ─────────────
@@ -77,13 +76,15 @@ async function startTokito() {
   conn.ev.on('creds.update', saveCreds)
 
   // ⚙️ Plugins
-  const pluginFolder = path.join(dir, 'plugins')
+  const pluginFolder = path.join(__dirname, 'plugins')
   if (!fs.existsSync(pluginFolder)) fs.mkdirSync(pluginFolder)
   const pluginFiles = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
   console.log(chalk.magenta(`🧩 Cargando ${pluginFiles.length} plugin(s)...`))
+  const plugins = []
   for (let file of pluginFiles) {
     try {
-      await import(`./plugins/${file}`)
+      const plugin = await import(`./plugins/${file}`)
+      if (plugin.default) plugins.push(plugin.default)
       console.log(chalk.gray(`  ⚙️  Plugin cargado: ${file}`))
     } catch (err) {
       console.error(chalk.red(`❌ Error cargando ${file}:`), err)
@@ -109,15 +110,17 @@ async function startTokito() {
       const command = text.slice(prefix.length).trim().split(/ +/).shift().toLowerCase()
       const args = text.trim().split(/ +/).slice(1)
 
-      for (let file of pluginFiles) {
+      // Ejecutar plugins
+      for (let plugin of plugins) {
         try {
-          const plugin = await import(`./plugins/${file}`)
-          if (plugin.default?.command?.includes(command)) {
-            await plugin.default.run(conn, m, { text, args, command, prefix })
+          if (!plugin.command) continue
+          const cmdRegex = plugin.command instanceof RegExp ? plugin.command.test(command) : plugin.command.includes(command)
+          if (cmdRegex && plugin.run) {
+            await plugin.run(conn, m, { text, args, command, prefix })
             return
           }
         } catch (err) {
-          console.error(chalk.red(`❌ Error en ${file}:`), err)
+          console.error(chalk.red(`❌ Error ejecutando plugin "${plugin.name || 'sin nombre'}":`), err)
         }
       }
     } catch (err) {
