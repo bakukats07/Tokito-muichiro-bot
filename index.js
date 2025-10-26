@@ -7,7 +7,7 @@ import pkg from '@whiskeysockets/baileys'
 import { fileURLToPath } from 'url'
 import { Boom } from '@hapi/boom'
 import { authMethod, phoneNumber, prefixes } from './settings.js'
-import { isReadableStream, checkFileExists } from './lib/helper.js' // ✅ Import nombrado seguro
+import { isReadableStream, checkFileExists } from './lib/helper.js'
 
 const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, DisconnectReason } = pkg
 
@@ -39,17 +39,24 @@ async function startTokito() {
     syncFullHistory: false,
   })
 
-  // 🔁 Reconexión automática y código de vinculación
+  // ───── Flags de control ─────
   let codeSent = false
+  let isConnecting = false
+
+  // ───── Conexión / Reconexión ─────
   conn.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
       if (reason === DisconnectReason.loggedOut) {
         console.log(chalk.red('🔴 Sesión cerrada. Borra /sessions y vuelve a vincular.'))
         process.exit(0)
-      } else {
+      } else if (!isConnecting) {
         console.log(chalk.yellow('🌀 Reconectando en 3s...'))
-        setTimeout(startTokito, 3000)
+        isConnecting = true
+        setTimeout(async () => {
+          isConnecting = false
+          await startTokito()
+        }, 3000)
       }
     } else if (connection === 'open') {
       console.log(chalk.greenBright('✅ Conectado a WhatsApp correctamente!\n'))
@@ -108,6 +115,7 @@ async function startTokito() {
       const command = text.slice(prefix.length).trim().split(/ +/).shift().toLowerCase()
       const args = text.trim().split(/ +/).slice(1)
 
+      // Ejecutar plugins
       for (let plugin of plugins) {
         try {
           if (!plugin.command) continue
