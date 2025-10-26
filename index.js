@@ -13,8 +13,22 @@ const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchL
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const sessionPath = path.join(__dirname, 'sessions')
-if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true })
 
+// ─────────────────────────────────────────────
+// ⚠️ BLOQUEO SI LA CARPETA SESSIONS YA EXISTE
+// ─────────────────────────────────────────────
+if (fs.existsSync(sessionPath)) {
+  console.log(chalk.red.bold('❌ La carpeta "sessions" ya existe.'))
+  console.log(chalk.yellow('⚠️ El bot no puede continuar para evitar sobreescribir la sesión existente.'))
+  console.log(chalk.yellow('🔹 Borra la carpeta "sessions" si deseas iniciar una sesión nueva.'))
+  process.exit(1)
+}
+
+// Crear carpeta sessions si no existe
+fs.mkdirSync(sessionPath, { recursive: true })
+console.log(chalk.green('✅ Carpeta "sessions" creada correctamente.'))
+
+// ─────────────────────────────────────────────
 async function startTokito() {
   console.clear()
 
@@ -70,8 +84,7 @@ async function startTokito() {
   conn.ev.on('creds.update', saveCreds)
 
   // Código de vinculación solo una vez
-  if (!global.globalCodeSent) global.globalCodeSent = false
-  if (authMethod === 'pairing' && !conn.authState.creds.registered && !global.globalCodeSent) {
+  if (authMethod === 'pairing' && !conn.authState.creds.registered) {
     const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
     if (!cleanNumber) {
       console.log(chalk.red('⚠️ No se encontró número del bot en settings.js'))
@@ -80,11 +93,10 @@ async function startTokito() {
 
     try {
       const code = await conn.requestPairingCode(cleanNumber)
-      global.globalCodeSent = true
       const instructions = '👉 En WhatsApp: Dispositivos vinculados → Introducir código'
       const termWidth = process.stdout.columns || 80
-
       let connected = false
+
       conn.ev.on('connection.update', ({ connection }) => {
         if (connection === 'open') connected = true
       })
@@ -93,7 +105,6 @@ async function startTokito() {
       async function neonCountdownInfinite(text, duration = 60) {
         let remaining = duration
         while (!connected && remaining >= 0) {
-          // Celeste fuerte
           process.stdout.write('\x1b[2J\x1b[0f')
           console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
           console.log(chalk.hex('#00bfff').bold(text.padStart(Math.floor((termWidth + text.length)/2))))
@@ -102,7 +113,6 @@ async function startTokito() {
           console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
           await new Promise(r => setTimeout(r, 500))
 
-          // Blanco brillante alternando
           process.stdout.write('\x1b[2J\x1b[0f')
           console.log(chalk.white.bold('='.repeat(termWidth)))
           console.log(chalk.white.bold(text.padStart(Math.floor((termWidth + text.length)/2))))
@@ -112,7 +122,7 @@ async function startTokito() {
           await new Promise(r => setTimeout(r, 500))
 
           remaining--
-          if (remaining < 0) remaining = duration // reinicia contador si no se conecta
+          if (remaining < 0) remaining = duration
         }
 
         process.stdout.write('\x1b[2J\x1b[0f')
