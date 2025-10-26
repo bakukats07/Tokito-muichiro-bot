@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 // TokitoBot | Base modular con Baileys MD
-// by: skycloud✨
+// by: Cristian Vega ✨
 // ─────────────────────────────────────────────
 
 import fs from "fs"
@@ -13,24 +13,15 @@ import makeWASocket, {
   DisconnectReason
 } from "@whiskeysockets/baileys"
 import Pino from "pino"
-import { Boom } from "@hapi/boom"
 import { config } from "./config.js"
+import { Boom } from "@hapi/boom"
 
 // ─────────────────────────────────────────────
-// 📍 VARIABLES BASE
+// 🧭 VARIABLES BASE
 // ─────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const {
-  prefix: PREFIX,
-  owner: OWNER,
-  mods: MODS,
-  prem: PREM,
-  sockers: SOCKERS,
-  botName,
-  autoread,
-  autoTyping
-} = config
+const { prefix: PREFIX, owner: OWNER, botName, autoread, autoTyping } = config
 
 // ─────────────────────────────────────────────
 // 🧩 AUTO-CREAR CARPETAS NECESARIAS
@@ -68,7 +59,7 @@ const loadPlugins = () => {
 }
 loadPlugins()
 
-// Reload plugins al modificarlos
+// Reload automático si cambias un plugin
 fs.watch("./plugins", (event, filename) => {
   if (filename && filename.endsWith(".js")) {
     console.log(chalk.yellow(`♻️ Plugin actualizado: ${filename}`))
@@ -89,8 +80,10 @@ async function startBot() {
     browser: [botName, "Chrome", "1.0.0"]
   })
 
+  // Guardar sesión
   conn.ev.on("creds.update", saveCreds)
 
+  // Manejo de desconexiones
   conn.ev.on("connection.update", async update => {
     const { connection, lastDisconnect } = update
     if (connection === "close") {
@@ -113,18 +106,24 @@ async function startBot() {
   conn.ev.on("messages.upsert", async ({ messages }) => {
     const msg = messages[0]
     if (!msg.message) return
+
     const sender = msg.key.remoteJid
     const body =
       msg.message.conversation ||
       msg.message.extendedTextMessage?.text ||
       msg.message.imageMessage?.caption ||
       ""
-    const isCmd = body.startsWith(PREFIX)
-    const command = isCmd
-      ? body.slice(PREFIX.length).trim().split(/ +/).shift().toLowerCase()
-      : ""
+
+    // ─────────────────────────────────────────────
+    // 🏷️ DETECCIÓN DE PREFIJOS MÚLTIPLES
+    // ─────────────────────────────────────────────
+    const prefixes = Array.isArray(PREFIX) ? PREFIX : [PREFIX]
+    const usedPrefix = prefixes.find(p => body.startsWith(p)) || null
+    const isCmd = !!usedPrefix
+    const command = isCmd ? body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase() : ""
     const args = body.trim().split(/ +/).slice(1)
 
+    // Auto leer o escribir
     if (autoread) await conn.readMessages([msg.key])
     if (autoTyping) await conn.sendPresenceUpdate("composing", sender)
 
@@ -134,25 +133,16 @@ async function startBot() {
     const banned = JSON.parse(fs.readFileSync("./data/banned.json"))
     if (banned.includes(sender)) return
 
-    // Buscar plugin que coincida con el comando
+    // ─────────────────────────────────────────────
+    // ⚡ EJECUTAR PLUGIN CORRESPONDIENTE
+    // ─────────────────────────────────────────────
     for (const [name, plugin] of plugins) {
       if (plugin.command?.includes(command)) {
-        // ──────────────── SISTEMA DE RANGOS ────────────────
         if (plugin.ownerOnly && !OWNER.includes(sender))
           return conn.sendMessage(sender, { text: "🚫 Solo el propietario puede usar este comando." })
 
-        if (plugin.modOnly && ![...OWNER, ...MODS].includes(sender))
-          return conn.sendMessage(sender, { text: "⚙️ Solo los moderadores pueden usar este comando." })
-
-        if (plugin.premOnly && ![...OWNER, ...MODS, ...PREM].includes(sender))
-          return conn.sendMessage(sender, { text: "💎 Solo los usuarios premium pueden usar este comando." })
-
-        if (plugin.sockerOnly && ![...OWNER, ...MODS, ...PREM, ...SOCKERS].includes(sender))
-          return conn.sendMessage(sender, { text: "🎮 Solo los sockers pueden usar este comando." })
-
-        // ─────────────────────────────────────────────
         try {
-          await plugin.run(msg, { conn, args, sender })
+          await plugin.run(msg, { conn, args, sender, usedPrefix, command })
         } catch (err) {
           console.error(chalk.red(`❌ Error en ${name}:`), err)
           conn.sendMessage(sender, { text: "⚠️ Error ejecutando comando." })
@@ -174,7 +164,7 @@ process.on("uncaughtException", err => {
 
 process.on("unhandledRejection", err => {
   console.error(chalk.red("⚠️ Promesa rechazada sin capturar:"), err)
-})
+}) que 
 
 // Auto reinicio en cambios del index
 fs.watchFile(__filename, () => {
