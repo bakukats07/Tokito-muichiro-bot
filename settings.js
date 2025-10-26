@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 // ⚙️ TokitoBot | Configuración Global
-// by: Skycloud✨
+// Adaptado a la estructura de Tokito-Muichiro-Bot
 // ─────────────────────────────────────────────
 
 import fs from "fs"
@@ -11,80 +11,77 @@ import { fileURLToPath } from "url"
 // 📞 NÚMEROS Y GRADOS DE USUARIOS
 //────────────────────────────────────────────
 
-// Número del bot (solo para conexión por código de texto)
-global.botNumber = '' // Ejemplo: 573218138672
-
-// Dueños y rangos
-global.owner = ['573004828388'] // 👑 Dueño principal
-global.sockers = ['573004828388']              // ⚙️ Rango intermedio (subdevs o testers)
-global.mods = ['573004828388']                 // 🧰 Moderadores
-global.prems = ['573004828388']                // 💎 Premium users
+export const botNumber = '' // Número del bot (para código de 8 dígitos)
+export const owner = ['573004828388']       // Dueño principal
+export const sockers = ['573004828388']     // Subdevs / testers
+export const mods = ['573004828388']        // Moderadores
+export const prems = ['573004828388']       // Premium users
 
 //────────────────────────────────────────────
 // 🤖 INFORMACIÓN DEL BOT
 //────────────────────────────────────────────
 
-global.botName = 'Ⓜ︎𝒖𝒊𝒄𝒉𝒊𝒓𝒐-𝑴𝑫'
-global.version = '1.0.0'
-global.library = 'Baileys Multi Device'
-global.prefix = ['#', '/', '.', '!']
-global.textBot = 'Ꮇ𝒖𝒊𝒄𝒉𝒊𝒓𝒐, mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드'
-global.author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드'
-global.dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ 스카이클라우드'
-global.currency = '¥enes'
+export const botName = 'Ⓜ︎𝒖𝒾𝒸𝒽𝒾𝒓𝒐-𝑴𝑫'
+export const version = '1.0.0'
+export const library = 'Baileys Multi Device'
+export const prefixes = ['#', '/', '.', '!']
+export const textBot = 'Ꮇ𝒖𝒾𝒸𝒽𝒾𝒓𝒐, mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드'
+export const author = '© mᥲძᥱ ᥕі𝗍һ ᑲᥡ 스카이클라우드'
+export const dev = '© ⍴᥆ᥕᥱrᥱძ ᑲᥡ 스카이클라우드'
+export const currency = '¥enes'
 
 //────────────────────────────────────────────
 // 🖼️ MULTIMEDIA & ENLACES
 //────────────────────────────────────────────
 
-global.banner = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/c6c24dc91a5befb5e6a58e23163ce5f4.jpg'
-global.icono = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/f9d15a813993931a4e484f5176da4348.jpg'
-global.catalogo = fs.existsSync('./lib/catalogo.jpg')
+export const banner = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/c6c24dc91a5befb5e6a58e23163ce5f4.jpg'
+export const icono = 'https://github.com/bakukats07/Mis-Imagenes/raw/main/f9d15a813993931a4e484f5176da4348.jpg'
+export const catalogo = fs.existsSync('./lib/catalogo.jpg')
   ? fs.readFileSync('./lib/catalogo.jpg')
   : null
 
-global.group = 'https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt'
-global.community = 'https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt'
-global.channel = 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
-global.github = 'https://github.com/bakukats07/Tokito-muichiro-bot'
-global.gmail = 'thekingdestroy507@gmail.com'
+export const group = 'https://chat.whatsapp.com/E7foYUiRVDQ4FSRwolDNzG?mode=wwt'
+export const community = 'https://chat.whatsapp.com/ECZeU9ipYKlIeTxzdjvtgW?mode=wwt'
+export const channel = 'https://whatsapp.com/channel/0029VbBFWP0Lo4hgc1cjlC0M'
+export const github = 'https://github.com/bakukats07/Tokito-muichiro-bot'
+export const gmail = 'thekingdestroy507@gmail.com'
 
 //────────────────────────────────────────────
 // 🔑 SESIONES Y OPCIONES DE CONEXIÓN
 //────────────────────────────────────────────
 
-global.sessionPrincipal = './session'
-global.sessionJadi = './Sessions/SubBot'
-global.MuichiroJadibots = true // Activa modo “subbots”
+export const sessionPrincipal = './sessions'
+export const sessionJadi = './Sessions/SubBot'
+export const MuichiroJadibots = true // Activa modo subbots
 
 //────────────────────────────────────────────
 // ⚙️ COMPORTAMIENTO GENERAL
 //────────────────────────────────────────────
 
-global.configBot = {
-  autoread: true,      // Marca los mensajes como leídos automáticamente
-  autoTyping: false,   // Simula que el bot está escribiendo
-  autoRecord: false,   // Simula grabar audio
-  restrict: true,      // Permite funciones de grupo (ban, kick)
-  antiCall: true,      // Bloquea llamadas
-  antiSpam: true,      // Evita spam de comandos
-  logs: true,          // Muestra logs en consola
+export const configBot = {
+  autoread: true,
+  autoTyping: false,
+  autoRecord: false,
+  restrict: true,
+  antiCall: true,
+  antiSpam: true,
+  logs: true
 }
 
 //────────────────────────────────────────────
 // 🕒 SISTEMA DE COOLDOWN (anti spam)
 //────────────────────────────────────────────
 
-global.cooldowns = {
-  default: 5, // segundos
-  premium: 2,
+export const cooldowns = {
+  default: 5,
+  premium: 2
 }
 
 //────────────────────────────────────────────
 // 📩 MENSAJES PREDEFINIDOS
 //────────────────────────────────────────────
 
-global.mensajes = {
+export const mensajes = {
   wait: '⌛ Procesando tu solicitud...',
   error: '❌ Ocurrió un error inesperado.',
   success: '✅ Comando ejecutado correctamente.',
@@ -94,33 +91,33 @@ global.mensajes = {
   group: '👥 Comando exclusivo para grupos.',
   private: '📩 Solo disponible en chats privados.',
   botAdmin: '🤖 Necesito permisos de administrador para hacerlo.',
-  premium: '💎 Solo usuarios premium tienen acceso a este comando.',
+  premium: '💎 Solo usuarios premium tienen acceso a este comando.'
 }
 
 //────────────────────────────────────────────
 // 💬 SALUDOS SEGÚN RANGO
 //────────────────────────────────────────────
 
-global.roleText = {
+export const roleText = {
   owner: '👑 Bienvenido, Creador.',
   sockers: '⚙️ Saludos, subdev.',
   mod: '🧰 Modo Moderador activado.',
   prem: '💎 Usuario Premium detectado.',
-  user: '👋 Hola, bienvenido.',
+  user: '👋 Hola, bienvenido.'
 }
 
 //────────────────────────────────────────────
 // 🌐 APIS DISPONIBLES
 //────────────────────────────────────────────
 
-global.APIs = {
+export const APIs = {
   zenz: {
     url: 'https://api.zenzapis.xyz',
     key: '82fd1691b8mshd09070ae556cdddp1cb6e2jsnf029e65d5a97'
   },
 }
 
-global.extraAPIs = {
+export const extraAPIs = {
   lolhuman: {
     url: 'https://api.lolhuman.xyz',
     key: 'your-lolhuman-key'
@@ -134,25 +131,17 @@ global.extraAPIs = {
 // 🗂️ DIRECTORIOS TEMPORALES
 //────────────────────────────────────────────
 
-global.paths = {
+export const paths = {
   tmp: './tmp',
   media: './media',
   logs: './logs',
 }
 
 //────────────────────────────────────────────
-// 🧩 AUTO-VALIDACIÓN
-//────────────────────────────────────────────
-
-if (!global.owner?.length) console.warn(chalk.yellow('⚠️ No hay ningún número de owner definido en config.js'))
-if (!global.botName) console.warn(chalk.yellow('⚠️ Falta definir botName'))
-if (!global.sessionPrincipal) console.warn(chalk.yellow('⚠️ Falta definir sessionPrincipal'))
-
-//────────────────────────────────────────────
 // 🔁 AUTO-RECARGA DE CONFIG
 //────────────────────────────────────────────
 
-let file = fileURLToPath(import.meta.url)
+const file = fileURLToPath(import.meta.url)
 fs.watchFile(file, () => {
   fs.unwatchFile(file)
   console.log(chalk.redBright("♻️ Configuración actualizada — recargando config.js"))
