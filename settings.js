@@ -10,15 +10,15 @@ import { fileURLToPath } from "url"
 // 📞 NÚMEROS Y ROLES DE USUARIOS  
 //────────────────────────────────────────────  
 
-export const botNumber = '573208204068' // Número del bot  
-export const owner = ['573004828388']    // Dueño principal  
-export const sockers = ['573004828388']  // Subdevs / testers  
-export const mods = ['573004828388']     // Moderadores  
-export const prems = ['573004828388']    // Premium users  
+export const botNumber = '+573208204068' // Número del bot  
+export const owner = ['+573004828388']    // Dueño principal  
+export const sockers = ['+573004828388']  // Subdevs / testers  
+export const mods = ['+573004828388']     // Moderadores  
+export const prems = ['+573004828388']    // Premium users  
 
 // Método de autenticación: 'pairing' para código de 8 dígitos  
 export const authMethod = 'pairing'  
-export const phoneNumber = '573208204068'  // Número del bot para vinculación 8 dígitos  
+export const phoneNumber = '+573208204068'  // Número del bot para vinculación 8 dígitos  
 
 //────────────────────────────────────────────  
 // 🤖 INFORMACIÓN DEL BOT  
