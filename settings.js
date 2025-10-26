@@ -11,7 +11,7 @@ import { fileURLToPath } from "url"
 // 📞 NÚMEROS Y GRADOS DE USUARIOS
 //────────────────────────────────────────────
 
-export const botNumber = '573218138672' // Número del bot (para código de 8 dígitos)
+export const botNumber = '573208204068' // Número del bot (para código de 8 dígitos)
 export const owner = ['573004828388']       // Dueño principal
 export const sockers = ['573004828388']     // Subdevs / testers
 export const mods = ['573004828388']        // Moderadores
