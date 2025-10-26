@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 // TokitoBot | Base modular con Baileys MD
-// by: Cristian Vega ✨
+// by: Skycloud ✨
 // ─────────────────────────────────────────────
 
 import fs from "fs"
