@@ -1,4 +1,4 @@
-// 🌫️ Tokito Muichiro Bot — index.js (versión estable Termux)
+// 🌫️ Tokito Muichiro Bot — index.js versión con contador 60s
 import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
@@ -6,21 +6,34 @@ import pino from 'pino'
 import pkg from '@whiskeysockets/baileys'
 import { fileURLToPath } from 'url'
 import { Boom } from '@hapi/boom'
-import { authMethod, phoneNumber, prefixes } from './settings.js'
-import { isReadableStream, checkFileExists } from './lib/helper.js'
+import { authMethod, phoneNumber } from './settings.js'
 
 const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, DisconnectReason } = pkg
 
-// ───────────── Rutas de sesión ─────────────
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const sessionPath = path.join(__dirname, 'sessions')
 if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true })
 
-// ───────────── Función principal ─────────────
 async function startTokito() {
   console.clear()
-  console.log(chalk.cyanBright('\n🌫️ Iniciando Tokito-Muichiro-Bot...\n'))
+
+  // 🌟 Inicio llamativo
+  const title = `
+╔════════════════════════════════╗
+║ 🌫️  TOKITO-MUICHIRO BOT  🌫️ ║
+╚════════════════════════════════╝
+`
+  console.log(chalk.hex('#00bfff').bold(title))
+
+  // Animación de carga
+  const loadingText = '⚡ Iniciando el bot, por favor espera '
+  const loadingFrames = ['.  ', '.. ', '...']
+  for (let i = 0; i < 6; i++) {
+    process.stdout.write(chalk.hex('#00bfff').bold(`\r${loadingText}${loadingFrames[i % loadingFrames.length]}`))
+    await new Promise(r => setTimeout(r, 400))
+  }
+  console.log('\n')
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
   const { version } = await fetchLatestBaileysVersion()
@@ -39,100 +52,86 @@ async function startTokito() {
     syncFullHistory: false,
   })
 
-  // ───── Flags de control ─────
-  let codeSent = false
-  let isConnecting = false
-
-  // ───── Conexión / Reconexión ─────
-  conn.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
+  // 🔁 Reconexión automática
+  conn.ev.on('connection.update', ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
       if (reason === DisconnectReason.loggedOut) {
         console.log(chalk.red('🔴 Sesión cerrada. Borra /sessions y vuelve a vincular.'))
         process.exit(0)
-      } else if (!isConnecting) {
+      } else {
         console.log(chalk.yellow('🌀 Reconectando en 3s...'))
-        isConnecting = true
-        setTimeout(async () => {
-          isConnecting = false
-          await startTokito()
-        }, 3000)
+        setTimeout(startTokito, 3000)
       }
     } else if (connection === 'open') {
       console.log(chalk.greenBright('✅ Conectado a WhatsApp correctamente!\n'))
-
-      // 🔐 Código de 8 dígitos solo una vez
-      if (authMethod === 'pairing' && !codeSent && !conn.authState.creds.registered) {
-        const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
-        if (!cleanNumber) return
-        try {
-          const code = await conn.requestPairingCode(cleanNumber)
-          console.log(chalk.greenBright(`\n🔢 Código de vinculación: ${chalk.yellow(code)}\n`))
-          console.log(chalk.gray('👉 En WhatsApp: Dispositivos vinculados → Introducir código\n'))
-          codeSent = true
-        } catch (err) {
-          console.error(chalk.red('❌ Error al generar código de vinculación:'), err)
-        }
-      }
     }
   })
 
   // 💾 Guardar credenciales
   conn.ev.on('creds.update', saveCreds)
 
-  // ⚙️ Plugins
-  const pluginFolder = path.join(__dirname, 'plugins')
-  if (!fs.existsSync(pluginFolder)) fs.mkdirSync(pluginFolder)
-  const pluginFiles = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
-  console.log(chalk.magenta(`🧩 Cargando ${pluginFiles.length} plugin(s)...`))
-  const plugins = []
-  for (let file of pluginFiles) {
-    try {
-      const plugin = await import(`./plugins/${file}`)
-      if (plugin.default) plugins.push(plugin.default)
-      console.log(chalk.gray(`  ⚙️  Plugin cargado: ${file}`))
-    } catch (err) {
-      console.error(chalk.red(`❌ Error cargando ${file}:`), err)
+  // 🔐 Código de vinculación solo una vez
+  if (!global.globalCodeSent) global.globalCodeSent = false
+  if (authMethod === 'pairing' && !conn.authState.creds.registered && !global.globalCodeSent) {
+    const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
+    if (!cleanNumber) {
+      console.log(chalk.red('⚠️ No se encontró número en settings.js'))
+      process.exit(1)
     }
-  }
-
-  // 💬 Manejo de mensajes
-  conn.ev.on('messages.upsert', async ({ messages }) => {
-    const m = messages[0]
-    if (!m.message) return
 
     try {
-      const text =
-        m.message.conversation ||
-        m.message.extendedTextMessage?.text ||
-        m.message.imageMessage?.caption ||
-        m.message.videoMessage?.caption ||
-        ''
+      const code = await conn.requestPairingCode(cleanNumber)
+      global.globalCodeSent = true
+      const instructions = '👉 En WhatsApp: Dispositivos vinculados → Introducir código'
+      const termWidth = process.stdout.columns || 80
 
-      const prefix = prefixes.find(p => text.startsWith(p))
-      if (!prefix) return
+      // 💡 Función efecto neón con contador 60s
+      let stopNeon = false
+      conn.ev.on('connection.update', ({ connection }) => {
+        if (connection === 'open') stopNeon = true
+      })
 
-      const command = text.slice(prefix.length).trim().split(/ +/).shift().toLowerCase()
-      const args = text.trim().split(/ +/).slice(1)
+      async function neonCountdown(text, duration = 60) {
+        let remaining = duration
+        while (!stopNeon && remaining >= 0) {
+          // Celeste fuerte
+          process.stdout.write('\x1b[2J\x1b[0f')
+          console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
+          console.log(chalk.hex('#00bfff').bold(text.padStart(Math.floor((termWidth + text.length)/2))))
+          console.log(chalk.hex('#00bfff').bold(instructions.padStart(Math.floor((termWidth + instructions.length)/2))))
+          console.log(chalk.hex('#00bfff').bold(`⏱️ Tiempo restante: ${remaining}s`.padStart(Math.floor((termWidth + (`⏱️ Tiempo restante: ${remaining}s`).length)/2))))
+          console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
+          await new Promise(r => setTimeout(r, 1000))
+          remaining--
 
-      // Ejecutar plugins
-      for (let plugin of plugins) {
-        try {
-          if (!plugin.command) continue
-          const cmdRegex = plugin.command instanceof RegExp ? plugin.command.test(command) : plugin.command.includes(command)
-          if (cmdRegex && plugin.run) {
-            await plugin.run(conn, m, { text, args, command, prefix })
-            return
-          }
-        } catch (err) {
-          console.error(chalk.red(`❌ Error ejecutando plugin "${plugin.name || 'sin nombre'}":`), err)
+          // Blanco brillante alternando
+          process.stdout.write('\x1b[2J\x1b[0f')
+          console.log(chalk.white.bold('='.repeat(termWidth)))
+          console.log(chalk.white.bold(text.padStart(Math.floor((termWidth + text.length)/2))))
+          console.log(chalk.white.bold(instructions.padStart(Math.floor((termWidth + instructions.length)/2))))
+          console.log(chalk.white.bold(`⏱️ Tiempo restante: ${remaining}s`.padStart(Math.floor((termWidth + (`⏱️ Tiempo restante: ${remaining}s`).length)/2))))
+          console.log(chalk.white.bold('='.repeat(termWidth)))
+          await new Promise(r => setTimeout(r, 1000))
+        }
+
+        // ✅ Una vez ingresado el código o tiempo terminado
+        process.stdout.write('\x1b[2J\x1b[0f')
+        if (stopNeon) {
+          console.log(chalk.greenBright(`✅ Código ${text} ingresado correctamente. Bot listo!`))
+        } else {
+          console.log(chalk.yellowBright(`⚠️ Tiempo de espera agotado. Reconectando...`))
+          setTimeout(startTokito, 3000)
         }
       }
+
+      await neonCountdown(code, 60)
+
     } catch (err) {
-      console.error(chalk.red('❌ Error manejando mensajes:'), err)
+      console.error(chalk.red('❌ Error al generar código de vinculación:'), err)
+      process.exit(1)
     }
-  })
+  }
 }
 
-// ───────────── Ejecutar bot ─────────────
 startTokito()
