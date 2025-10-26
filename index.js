@@ -1,143 +1,183 @@
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
+// ─────────────────────────────────────────────
+// TokitoBot | Base modular con Baileys MD
+// by: skycloud✨
+// ─────────────────────────────────────────────
 
-// Imports básicos
-import './settings.js'
-import './plugins/_allfake.js'
-import cfonts from 'cfonts'
-import { createRequire } from 'module'
-import { fileURLToPath, pathToFileURL } from 'url'
-import { platform } from 'process'
-import * as ws from 'ws'
-import fs, { readdirSync, unlinkSync, existsSync, mkdirSync, watch } from 'fs'
-import yargs from 'yargs'
-import { spawn } from 'child_process'
-import lodash from 'lodash'
-import chalk from 'chalk'
-import syntaxerror from 'syntax-error'
-import pino from 'pino'
-import path, { join } from 'path'
-import { Boom } from '@hapi/boom'
-import { makeWASocket, protoType, serialize } from './lib/simple.js'
-import { Low, JSONFile } from 'lowdb'
-import store from './lib/store.js'
-import { yukiJadiBot } from './plugins/sockets-serbot.js'
-import pkg from 'google-libphonenumber'
-const { PhoneNumberUtil } = pkg
-const phoneUtil = PhoneNumberUtil.getInstance()
-const { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, jidNormalizedUser } = await import('@whiskeysockets/baileys')
-import readline from 'readline'
-import NodeCache from 'node-cache'
+import fs from "fs"
+import path from "path"
+import chalk from "chalk"
+import { execSync } from "child_process"
+import { fileURLToPath } from "url"
+import makeWASocket, {
+  useMultiFileAuthState,
+  DisconnectReason
+} from "@whiskeysockets/baileys"
+import Pino from "pino"
+import { Boom } from "@hapi/boom"
+import { config } from "./config.js"
 
-// Proto + serialize helpers
-protoType()
-serialize()
+// ─────────────────────────────────────────────
+// 📍 VARIABLES BASE
+// ─────────────────────────────────────────────
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const {
+  prefix: PREFIX,
+  owner: OWNER,
+  mods: MODS,
+  prem: PREM,
+  sockers: SOCKERS,
+  botName,
+  autoread,
+  autoTyping
+} = config
 
-// Colores y estilo de consola
-cfonts.say('Tokito Muichiro', { font: 'simple', align: 'left', gradient: ['green','white'] })
-cfonts.say('Made with love by Destroy', { font: 'console', align: 'center', colors: ['cyan','magenta','yellow'] })
+// ─────────────────────────────────────────────
+// 🧩 AUTO-CREAR CARPETAS NECESARIAS
+// ─────────────────────────────────────────────
+const folders = ["./session", "./plugins", "./lib", "./tmp", "./data"]
+for (const dir of folders) if (!fs.existsSync(dir)) fs.mkdirSync(dir)
+if (!fs.existsSync("./data/banned.json")) fs.writeFileSync("./data/banned.json", "[]")
 
-// Globals: paths y require helpers
-global.__filename = (pathURL = import.meta.url, rmPrefix = platform !== 'win32') => rmPrefix 
-    ? /file:\/\/\//.test(pathURL) ? fileURLToPath(pathURL) : pathURL 
-    : pathToFileURL(pathURL).toString()
-
-global.__dirname = pathURL => path.dirname(global.__filename(pathURL, true))
-global.__require = dir => createRequire(dir)
-
-// Globals: options y prefix
-global.opts = yargs(process.argv.slice(2)).exitProcess(false).parse()
-global.prefix = new RegExp('^[#!./-]')
-
-// DB
-global.db = new Low(new JSONFile('database.json'))
-global.DATABASE = global.db
-global.loadDatabase = async () => {
-  if(global.db.READ) return new Promise(resolve => setInterval(async function(){
-    if(!global.db.READ){ clearInterval(this); resolve(global.db.data ?? global.loadDatabase()) }
-  },1000))
-  if(global.db.data) return
-  global.db.READ = true
-  await global.db.read().catch(console.error)
-  global.db.READ = null
-  global.db.data = { users:{}, chats:{}, settings:{}, ...(global.db.data || {}) }
-  global.db.chain = lodash.chain(global.db.data)
+// ─────────────────────────────────────────────
+// 🔧 AUTO-INSTALADOR DE DEPENDENCIAS
+// ─────────────────────────────────────────────
+const pkg = ["@whiskeysockets/baileys", "chalk", "pino", "@hapi/boom"]
+for (const p of pkg) {
+  try {
+    require.resolve(p)
+  } catch {
+    console.log(chalk.yellow(`📦 Instalando dependencia faltante: ${p}`))
+    execSync(`npm install ${p}`, { stdio: "inherit" })
+  }
 }
-await global.loadDatabase()
 
-// Auth state Baileys
-const { state, saveState, saveCreds } = await useMultiFileAuthState('sessions')
+// ─────────────────────────────────────────────
+// 📂 CARGADOR DE PLUGINS
+// ─────────────────────────────────────────────
+const plugins = new Map()
+const loadPlugins = () => {
+  plugins.clear()
+  const files = fs.readdirSync("./plugins").filter(f => f.endsWith(".js"))
+  for (const file of files) {
+    import(`./plugins/${file}?update=${Date.now()}`)
+      .then(p => plugins.set(file, p.default))
+      .catch(err => console.log(chalk.red(`❌ Error cargando ${file}:`), err))
+  }
+  console.log(chalk.green(`✅ ${plugins.size} plugins cargados.`))
+}
+loadPlugins()
 
-// Cachés
-const msgRetryCounterCache = new NodeCache({ stdTTL:0, checkperiod:0 })
-const userDevicesCache = new NodeCache({ stdTTL:0, checkperiod:0 })
+// Reload plugins al modificarlos
+fs.watch("./plugins", (event, filename) => {
+  if (filename && filename.endsWith(".js")) {
+    console.log(chalk.yellow(`♻️ Plugin actualizado: ${filename}`))
+    loadPlugins()
+  }
+})
 
-// Fetch latest Baileys version
-const { version } = await fetchLatestBaileysVersion()
+// ─────────────────────────────────────────────
+// 🤖 INICIO DEL BOT
+// ─────────────────────────────────────────────
+async function startBot() {
+  const { state, saveCreds } = await useMultiFileAuthState("./session")
 
-// Readline y opciones de login
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-const question = (txt) => new Promise(res => rl.question(txt,res))
+  const conn = makeWASocket({
+    printQRInTerminal: true,
+    auth: state,
+    logger: Pino({ level: "silent" }),
+    browser: [botName, "Chrome", "1.0.0"]
+  })
 
-let opcion
-const methodCodeQR = process.argv.includes('qr')
-const methodCode = !!global.botNumber || process.argv.includes('code')
-if(methodCodeQR) opcion = '1'
+  conn.ev.on("creds.update", saveCreds)
 
-// Función principal para conectar el bot
-async function startBot(){
-  let phoneNumber = global.botNumber
-
-  if(!fs.existsSync('./sessions/creds.json')){
-    if(!methodCodeQR && !methodCode){
-      do{
-        opcion = await question(chalk.bold.white('Seleccione opción:\n1. QR\n2. Código de 8 dígitos\n--> '))
-      }while(!/^[1-2]$/.test(opcion))
+  conn.ev.on("connection.update", async update => {
+    const { connection, lastDisconnect } = update
+    if (connection === "close") {
+      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
+      console.log(chalk.red(`⚠️ Desconexión detectada — código: ${reason}`))
+      if (reason !== DisconnectReason.loggedOut) {
+        console.log(chalk.cyan("🔄 Reintentando conexión..."))
+        startBot()
+      } else {
+        console.log(chalk.red("🔒 Sesión cerrada. Escanea el QR nuevamente."))
+      }
+    } else if (connection === "open") {
+      console.log(chalk.green(`✅ ${botName} conectado exitosamente.`))
     }
-  }
+  })
 
-  // Configuración conexión
-  const connOptions = {
-    logger: pino({ level:'silent' }),
-    printQRInTerminal: opcion=='1',
-    browser: ['MacOs','Safari'],
-    auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level:'fatal' }).child({ level:'fatal' })) },
-    markOnlineOnConnect: false,
-    generateHighQualityLinkPreview: true,
-    syncFullHistory: false,
-    msgRetryCounterCache,
-    userDevicesCache,
-    version,
-    getMessage: async key => { try { let jid = jidNormalizedUser(key.remoteJid); let msg = await store.loadMessage(jid,key.id); return msg?.message||'' } catch { return '' } },
-  }
+  // ─────────────────────────────────────────────
+  // 💬 MANEJO DE MENSAJES
+  // ─────────────────────────────────────────────
+  conn.ev.on("messages.upsert", async ({ messages }) => {
+    const msg = messages[0]
+    if (!msg.message) return
+    const sender = msg.key.remoteJid
+    const body =
+      msg.message.conversation ||
+      msg.message.extendedTextMessage?.text ||
+      msg.message.imageMessage?.caption ||
+      ""
+    const isCmd = body.startsWith(PREFIX)
+    const command = isCmd
+      ? body.slice(PREFIX.length).trim().split(/ +/).shift().toLowerCase()
+      : ""
+    const args = body.trim().split(/ +/).slice(1)
 
-  global.conn = makeWASocket(connOptions)
-  conn.ev.on('creds.update', saveCreds)
+    if (autoread) await conn.readMessages([msg.key])
+    if (autoTyping) await conn.sendPresenceUpdate("composing", sender)
 
-  // Events
-  conn.handler = (await import('./handler.js')).default.bind(global.conn)
-  conn.ev.on('messages.upsert', conn.handler)
-  conn.ev.on('connection.update', connectionUpdate)
-  conn.ev.on('creds.update', saveCreds)
+    if (!isCmd) return
 
-  console.log(chalk.green('[Bot] Conectado'))
+    // Verificar si está baneado
+    const banned = JSON.parse(fs.readFileSync("./data/banned.json"))
+    if (banned.includes(sender)) return
+
+    // Buscar plugin que coincida con el comando
+    for (const [name, plugin] of plugins) {
+      if (plugin.command?.includes(command)) {
+        // ──────────────── SISTEMA DE RANGOS ────────────────
+        if (plugin.ownerOnly && !OWNER.includes(sender))
+          return conn.sendMessage(sender, { text: "🚫 Solo el propietario puede usar este comando." })
+
+        if (plugin.modOnly && ![...OWNER, ...MODS].includes(sender))
+          return conn.sendMessage(sender, { text: "⚙️ Solo los moderadores pueden usar este comando." })
+
+        if (plugin.premOnly && ![...OWNER, ...MODS, ...PREM].includes(sender))
+          return conn.sendMessage(sender, { text: "💎 Solo los usuarios premium pueden usar este comando." })
+
+        if (plugin.sockerOnly && ![...OWNER, ...MODS, ...PREM, ...SOCKERS].includes(sender))
+          return conn.sendMessage(sender, { text: "🎮 Solo los sockers pueden usar este comando." })
+
+        // ─────────────────────────────────────────────
+        try {
+          await plugin.run(msg, { conn, args, sender })
+        } catch (err) {
+          console.error(chalk.red(`❌ Error en ${name}:`), err)
+          conn.sendMessage(sender, { text: "⚠️ Error ejecutando comando." })
+        }
+        return
+      }
+    }
+  })
 }
-await startBot()
 
-// Conexión y reconexión
-async function connectionUpdate(update){
-  const { connection, lastDisconnect, isNewLogin } = update
-  if(isNewLogin) conn.isInit = true
-  if(connection==='close'){
-    const code = lastDisconnect?.error?.output?.statusCode
-    if([401,440,428,405].includes(code)) console.log(chalk.red(`[Bot] Cierra la sesión principal`))
-    console.log(chalk.yellow('[Bot] Reconectando...'))
-    await global.reloadHandler(true)
-  }
-}
+startBot()
 
-// Helpers: limpieza TMP
-setInterval(() => {
-  const tmpDir = join(global.__dirname(import.meta.url),'tmp')
-  if(!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir,{recursive:true})
-  readdirSync(tmpDir).forEach(f=>unlinkSync(join(tmpDir,f)))
-}, 30*1000)
+// ─────────────────────────────────────────────
+// 🛡️ MANEJO GLOBAL DE ERRORES
+// ─────────────────────────────────────────────
+process.on("uncaughtException", err => {
+  console.error(chalk.red("❌ Error no controlado:"), err)
+})
+
+process.on("unhandledRejection", err => {
+  console.error(chalk.red("⚠️ Promesa rechazada sin capturar:"), err)
+})
+
+// Auto reinicio en cambios del index
+fs.watchFile(__filename, () => {
+  console.log(chalk.yellow("♻️ Reiniciando el bot por cambios en index.js..."))
+  process.exit()
+})
