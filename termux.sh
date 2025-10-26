@@ -1,6 +1,6 @@
 # ==========================================================
 # 🌀 Tokito Muichiro Bot - Gestor interactivo Termux
-# 💻 Autor original: @gata_dios | Remodelado por ChatGPT
+# 💻 Autor original: Skycloud
 # 🧩 Con modo automático para arranque directo
 # ==========================================================
 
