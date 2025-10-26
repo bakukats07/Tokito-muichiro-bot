@@ -11,11 +11,17 @@ import { fileURLToPath } from "url"
 // 📞 NÚMEROS Y GRADOS DE USUARIOS
 //────────────────────────────────────────────
 
-export const botNumber = '' // Número del bot (para código de 8 dígitos)
+export const botNumber = '573218138672' // Número del bot (para código de 8 dígitos)
 export const owner = ['573004828388']       // Dueño principal
 export const sockers = ['573004828388']     // Subdevs / testers
 export const mods = ['573004828388']        // Moderadores
 export const prems = ['573004828388']       // Premium users
+
+// Método de autenticación: 'qr' para escanear QR, 'pairing' para código de 8 dígitos
+export const authMethod = 'qr'
+
+// Número del bot para conexión por código de 8 dígitos
+export const phoneNumber = '573218138672'
 
 //────────────────────────────────────────────
 // 🤖 INFORMACIÓN DEL BOT
@@ -144,6 +150,6 @@ export const paths = {
 const file = fileURLToPath(import.meta.url)
 fs.watchFile(file, () => {
   fs.unwatchFile(file)
-  console.log(chalk.redBright("♻️ Configuración actualizada — recargando config.js"))
+  console.log(chalk.redBright("♻️ Configuración actualizada — recargando settings.js"))
   import(`${file}?update=${Date.now()}`)
 })
