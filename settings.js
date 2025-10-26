@@ -16,9 +16,9 @@ global.botNumber = '' // Ejemplo: 573218138672
 
 // Dueños y rangos
 global.owner = ['573004828388'] // 👑 Dueño principal
-global.sockers = []              // ⚙️ Rango intermedio (subdevs o testers)
-global.mods = []                 // 🧰 Moderadores
-global.prems = []                // 💎 Premium users
+global.sockers = ['573004828388']              // ⚙️ Rango intermedio (subdevs o testers)
+global.mods = ['573004828388']                 // 🧰 Moderadores
+global.prems = ['573004828388']                // 💎 Premium users
 
 //────────────────────────────────────────────
 // 🤖 INFORMACIÓN DEL BOT
@@ -55,7 +55,7 @@ global.gmail = 'thekingdestroy507@gmail.com'
 
 global.sessionPrincipal = './session'
 global.sessionJadi = './Sessions/SubBot'
-global.yukiJadibts = true // Activa modo “subbots”
+global.MuichiroJadibots = true // Activa modo “subbots”
 
 //────────────────────────────────────────────
 // ⚙️ COMPORTAMIENTO GENERAL
