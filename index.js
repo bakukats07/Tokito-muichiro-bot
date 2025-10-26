@@ -39,24 +39,8 @@ async function startTokito() {
     syncFullHistory: false,
   })
 
-  // 🔐 Código de 8 dígitos (pairing)
-  if (authMethod === 'pairing' && !conn.authState.creds.registered) {
-    const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
-    if (!cleanNumber) {
-      console.log(chalk.red('⚠️ No se encontró número en settings.js'))
-      process.exit(1)
-    }
-    try {
-      const code = await conn.requestPairingCode(cleanNumber)
-      console.log(chalk.greenBright(`\n🔢 Código de vinculación: ${chalk.yellow(code)}\n`))
-      console.log(chalk.gray('👉 En WhatsApp: Dispositivos vinculados → Introducir código\n'))
-    } catch (err) {
-      console.error(chalk.red('❌ Error al generar código de vinculación:'), err)
-      process.exit(1)
-    }
-  }
-
-  // 🔁 Reconexión automática
+  // 🔁 Reconexión automática y código de vinculación
+  let codeSent = false
   conn.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
@@ -69,6 +53,20 @@ async function startTokito() {
       }
     } else if (connection === 'open') {
       console.log(chalk.greenBright('✅ Conectado a WhatsApp correctamente!\n'))
+
+      // 🔐 Código de 8 dígitos solo una vez
+      if (authMethod === 'pairing' && !codeSent && !conn.authState.creds.registered) {
+        const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
+        if (!cleanNumber) return
+        try {
+          const code = await conn.requestPairingCode(cleanNumber)
+          console.log(chalk.greenBright(`\n🔢 Código de vinculación: ${chalk.yellow(code)}\n`))
+          console.log(chalk.gray('👉 En WhatsApp: Dispositivos vinculados → Introducir código\n'))
+          codeSent = true
+        } catch (err) {
+          console.error(chalk.red('❌ Error al generar código de vinculación:'), err)
+        }
+      }
     }
   })
 
@@ -110,7 +108,6 @@ async function startTokito() {
       const command = text.slice(prefix.length).trim().split(/ +/).shift().toLowerCase()
       const args = text.trim().split(/ +/).slice(1)
 
-      // Ejecutar plugins
       for (let plugin of plugins) {
         try {
           if (!plugin.command) continue
