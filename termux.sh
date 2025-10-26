@@ -1,140 +1,94 @@
-# ==========================================================
-# 🌀 Tokito Muichiro Bot - Gestor interactivo Termux
-# 💻 Autor original: Skycloud
-# 🧩 Con modo automático para arranque directo
-# ==========================================================
-
 #!/data/data/com.termux/files/usr/bin/bash
-BOT_DIR="Tokito-muichiro-bot"
-BOT_REPO="https://github.com/bakukats07/Tokito-muichiro-bot.git"
-DB_FILE="database.json"
+# 🌫️ Tokito Muichiro Bot — Script de arranque Termux con logs y control de errores
 
-GREEN='\033[32m'
-RED='\033[31m'
-YELLOW='\033[33m'
-BOLD='\033[1m'
-RESET='\033[0m'
+clear
+echo "🌫️ Iniciando Tokito Muichiro Bot..."
+echo "─────────────────────────────────────"
+echo
 
-# ────────────────────────────────────────────────
-check_dependencies() {
-  echo -e "${YELLOW}🔍 Verificando dependencias...${RESET}"
-  for pkg in git nodejs yarn; do
-    if ! command -v $pkg >/dev/null 2>&1; then
-      echo -e "${RED}❌ $pkg no está instalado. Instalando...${RESET}"
-      pkg install -y $pkg
-    else
-      echo -e "${GREEN}✅ $pkg instalado.${RESET}"
-    fi
-  done
+# ──────────────── 1️⃣ CONFIGURACIÓN ────────────────
+LOG_DIR="logs"
+LOG_FILE="$LOG_DIR/termux.log"
+mkdir -p "$LOG_DIR"
+
+log() {
+  echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
 
-# ────────────────────────────────────────────────
-clone_bot() {
-  echo -e "${GREEN}🌐 Clonando el repositorio...${RESET}"
-  cd "$HOME" || exit 1
-  rm -rf "$BOT_DIR"
-  git clone "$BOT_REPO" "$BOT_DIR" || {
-    echo -e "${RED}❌ Error al clonar el repositorio.${RESET}"
-    exit 1
-  }
-  cd "$BOT_DIR" || exit 1
-  echo -e "${GREEN}📦 Instalando dependencias...${RESET}"
-  yarn --ignore-scripts && npm install
-}
-
-# ────────────────────────────────────────────────
-update_bot() {
-  if [ -d "$HOME/$BOT_DIR" ]; then
-    echo -e "${GREEN}♻️ Actualizando $BOT_DIR...${RESET}"
-    cd "$HOME/$BOT_DIR" || exit 1
-    git pull
-    echo -e "${GREEN}📦 Reinstalando dependencias...${RESET}"
-    yarn --ignore-scripts && npm install
-  else
-    echo -e "${RED}⚠️ No se encontró $BOT_DIR. Clonando...${RESET}"
-    clone_bot
+# ──────────────── 2️⃣ VERIFICAR HERRAMIENTAS ────────────────
+for pkg in nodejs-lts git ffmpeg; do
+  if ! command -v ${pkg%%-*} &> /dev/null; then
+    log "⚠️ Instalando dependencia del sistema: $pkg"
+    pkg install $pkg -y
   fi
-}
+done
 
-# ────────────────────────────────────────────────
-start_bot() {
-  if [ ! -d "$HOME/$BOT_DIR" ]; then
-    echo -e "${RED}⚠️ El bot no está instalado. Clonando primero...${RESET}"
-    clone_bot
+# ──────────────── 3️⃣ CREAR CARPETAS ────────────────
+for folder in tmp sessions plugins lib; do
+  if [ ! -d "$folder" ]; then
+    mkdir -p "$folder"
+    log "📁 Carpeta creada: $folder"
   fi
-  cd "$HOME/$BOT_DIR" || exit 1
-  echo -e "${GREEN}🚀 Iniciando Tokito Muichiro Bot...${RESET}"
-  npm start
-}
+done
 
-# ────────────────────────────────────────────────
-backup_db() {
-  if [ -f "$HOME/$BOT_DIR/$DB_FILE" ]; then
-    mv "$HOME/$BOT_DIR/$DB_FILE" "$HOME/"
-    echo -e "${GREEN}💾 Base de datos respaldada en $HOME.${RESET}"
-  else
-    echo -e "${RED}⚠️ No se encontró $DB_FILE dentro de $BOT_DIR.${RESET}"
-  fi
-}
+# ──────────────── 4️⃣ DEPENDENCIAS NODE ────────────────
+log "📦 Verificando dependencias npm..."
+npm install --no-fund --no-audit > /dev/null 2>&1
+log "✅ Dependencias actualizadas."
 
-# ────────────────────────────────────────────────
-restore_db() {
-  if [ -f "$HOME/$DB_FILE" ]; then
-    mv "$HOME/$DB_FILE" "$HOME/$BOT_DIR/"
-    echo -e "${GREEN}📁 Base de datos restaurada al bot.${RESET}"
-  else
-    echo -e "${RED}⚠️ No hay $DB_FILE en $HOME.${RESET}"
-  fi
-}
+# ──────────────── 5️⃣ INFORMACIÓN DEL SISTEMA ────────────────
+log "📡 Entorno: Termux"
+log "💻 Node.js: $(node -v)"
+log "📂 Carpeta actual: $(pwd)"
+echo "──────────────────────────────"
+echo
 
-# ────────────────────────────────────────────────
-auto_mode() {
-  echo -e "${BOLD}${YELLOW}⚙️  Modo automático activado...${RESET}"
-  check_dependencies
-  update_bot
-  restore_db
-  start_bot
-}
-
-# ────────────────────────────────────────────────
-show_menu() {
-  clear
-  echo -e "${BOLD}${GREEN}"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🌀 TOKITO MUICHIRO BOT - PANEL TERMUX"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-  echo ""
-  echo "1️⃣  Instalar Bot"
-  echo "2️⃣  Actualizar Bot"
-  echo "3️⃣  Iniciar Bot"
-  echo "4️⃣  Respaldar Base de Datos"
-  echo "5️⃣  Restaurar Base de Datos"
-  echo "6️⃣  Salir"
-  echo ""
-  echo -ne "${YELLOW}Selecciona una opción [1-6]: ${RESET}"
-  read -r opcion
-  echo ""
-
-  case $opcion in
-    1) check_dependencies && clone_bot && restore_db ;;
-    2) update_bot ;;
-    3) start_bot ;;
-    4) backup_db ;;
-    5) restore_db ;;
-    6) echo -e "${GREEN}👋 Saliendo del panel...${RESET}"; exit 0 ;;
-    *) echo -e "${RED}❌ Opción inválida.${RESET}" ;;
-  esac
-
-  echo ""
-  read -p "Presiona ENTER para volver al menú..." temp
-  show_menu
-}
-
-# ────────────────────────────────────────────────
-# 🏁 Arranque: detecta si usar modo automático o menú
-if [ "$1" = "auto" ]; then
-  auto_mode
+# ──────────────── 6️⃣ DETECTAR SESIÓN ────────────────
+if [ -d "sessions" ] && [ "$(ls -A sessions)" ]; then
+  MODE="normal"
+  log "🔑 Sesión detectada: inicio normal."
 else
-  check_dependencies
-  show_menu
+  echo "🔐 No se detectó sesión activa."
+  echo
+  echo "Elige el modo de conexión:"
+  echo "  1️⃣ Escanear código QR"
+  echo "  2️⃣ Ingresar código de 8 dígitos"
+  echo
+  read -p "👉 Escribe 1 o 2 y presiona Enter: " OPCION
+  if [ "$OPCION" = "2" ]; then
+    MODE="codigo"
+  else
+    MODE="normal"
+  fi
 fi
+
+# ──────────────── 7️⃣ FUNCIÓN PRINCIPAL ────────────────
+while true; do
+  echo
+  log "🚀 Iniciando el bot en modo: ${MODE^^}"
+
+  if [ "$MODE" = "codigo" ]; then
+    node index.js --code 2>&1 | tee -a "$LOG_FILE"
+  else
+    node index.js 2>&1 | tee -a "$LOG_FILE"
+  fi
+
+  EXIT_CODE=${PIPESTATUS[0]}
+  if [ $EXIT_CODE -eq 0 ]; then
+    log "🟢 El bot finalizó correctamente."
+    break
+  else
+    log "❌ El bot se cerró con error (código $EXIT_CODE)."
+    log "🪶 Últimos errores del registro:"
+    tail -n 10 "$LOG_FILE"
+    echo
+    echo "⚠️ El bot se detuvo inesperadamente."
+    echo
+    read -p "👉 ¿Deseas reiniciar (r) o salir (s)? " OPCION
+    case "$OPCION" in
+      [Rr]* ) log "🔁 Reiniciando en 3 segundos..."; sleep 3 ;;
+      [Ss]* ) log "👋 Bot detenido manualmente."; exit 0 ;;
+      * ) log "❓ Opción no válida, reiniciando por defecto en 5 segundos..."; sleep 5 ;;
+    esac
+  fi
+done
