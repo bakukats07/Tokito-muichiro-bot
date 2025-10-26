@@ -1,4 +1,4 @@
-// 🌫️ Tokito Muichiro Bot — index.js final seguro
+// 🌫️ Tokito Muichiro Bot — index.js final seguro (bloqueo de sesiones múltiples)
 import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
@@ -83,11 +83,24 @@ async function startTokito() {
   // Guardar credenciales
   conn.ev.on('creds.update', saveCreds)
 
+  // ─────────────────────────────
   // Código de vinculación solo una vez
+  // ─────────────────────────────
   if (authMethod === 'pairing' && !conn.authState.creds.registered) {
     const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
     if (!cleanNumber) {
       console.log(chalk.red('⚠️ No se encontró número del bot en settings.js'))
+      process.exit(1)
+    }
+
+    // ─────────────────────────────
+    // Bloqueo si detecta múltiples sesiones activas
+    // ─────────────────────────────
+    const activeSessions = fs.readdirSync(sessionPath).filter(file => file.endsWith('.json'))
+    if (activeSessions.length > 0) {
+      console.log(chalk.red.bold('❌ Ya existen sesiones activas en la carpeta "sessions".'))
+      console.log(chalk.yellow('⚠️ Para evitar conflictos, el bot no iniciará una nueva sesión.'))
+      console.log(chalk.yellow('🔹 Borra las sesiones existentes si quieres reiniciar.'))
       process.exit(1)
     }
 
