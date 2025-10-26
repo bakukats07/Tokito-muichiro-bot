@@ -6,7 +6,7 @@ import pino from 'pino'
 import pkg from '@whiskeysockets/baileys'
 import { fileURLToPath } from 'url'
 import { Boom } from '@hapi/boom'
-import { authMethod, phoneNumber } from './settings.js'
+import { authMethod, phoneNumber, botName } from './settings.js'
 
 const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, DisconnectReason } = pkg
 
@@ -18,14 +18,15 @@ if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true })
 async function startTokito() {
   console.clear()
 
+  // 🌟 Título neón
   const title = `
 ╔════════════════════════════════╗
-║ 🌫️  TOKITO-MUICHIRO BOT  🌫️ ║
+║ 🌫️  ${botName.toUpperCase()}  🌫️ ║
 ╚════════════════════════════════╝
 `
   console.log(chalk.hex('#00bfff').bold(title))
 
-  // ⏳ Animación de carga
+  // Animación de carga
   const loadingText = '⚡ Iniciando el bot, por favor espera '
   const loadingFrames = ['.  ', '.. ', '...']
   for (let i = 0; i < 6; i++) {
@@ -34,20 +35,15 @@ async function startTokito() {
   }
   console.log('\n')
 
-  // Si ya hay sesión guardada, evita generar nuevo código
-  const stateFile = path.join(sessionPath, 'state.json')
-  if (fs.existsSync(stateFile)) {
-    console.log(chalk.greenBright('✅ Sesión existente encontrada. Conectando sin generar código...\n'))
-  }
-
+  // Estado de sesión
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
   const { version } = await fetchLatestBaileysVersion()
   const logger = pino({ level: 'silent' })
 
   const conn = makeWASocket({
     version,
-    printQRInTerminal: authMethod === 'qr' && !fs.existsSync(stateFile),
-    browser: ['Tokito Muichiro Bot', 'Chrome', '10.0'],
+    printQRInTerminal: authMethod === 'qr',
+    browser: [botName, 'Chrome', '10.0'],
     logger,
     auth: {
       creds: state.creds,
@@ -57,7 +53,7 @@ async function startTokito() {
     syncFullHistory: false,
   })
 
-  // 🔄 Reconexión automática solo si la sesión se cierra
+  // Reconexión automática
   conn.ev.on('connection.update', ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
@@ -70,19 +66,21 @@ async function startTokito() {
     }
   })
 
-  // 💾 Guardar credenciales automáticamente
+  // Guardar credenciales
   conn.ev.on('creds.update', saveCreds)
 
-  // 🔑 Generar código solo si no hay sesión
-  if (!fs.existsSync(stateFile) && authMethod === 'pairing' && !conn.authState.creds.registered) {
+  // Código de vinculación solo una vez
+  if (!global.globalCodeSent) global.globalCodeSent = false
+  if (authMethod === 'pairing' && !conn.authState.creds.registered && !global.globalCodeSent) {
     const cleanNumber = phoneNumber?.replace(/[^0-9]/g, '')
     if (!cleanNumber) {
-      console.log(chalk.red('⚠️ No se encontró número en settings.js'))
+      console.log(chalk.red('⚠️ No se encontró número del bot en settings.js'))
       process.exit(1)
     }
 
     try {
       const code = await conn.requestPairingCode(cleanNumber)
+      global.globalCodeSent = true
       const instructions = '👉 En WhatsApp: Dispositivos vinculados → Introducir código'
       const termWidth = process.stdout.columns || 80
 
@@ -91,10 +89,11 @@ async function startTokito() {
         if (connection === 'open') connected = true
       })
 
-      // 💡 Neón + contador 60s hasta conectar
+      // 💡 Neón + contador 8 dígitos
       async function neonCountdownInfinite(text, duration = 60) {
         let remaining = duration
-        while (!connected) {
+        while (!connected && remaining >= 0) {
+          // Celeste fuerte
           process.stdout.write('\x1b[2J\x1b[0f')
           console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
           console.log(chalk.hex('#00bfff').bold(text.padStart(Math.floor((termWidth + text.length)/2))))
@@ -103,6 +102,7 @@ async function startTokito() {
           console.log(chalk.hex('#00bfff').bold('='.repeat(termWidth)))
           await new Promise(r => setTimeout(r, 500))
 
+          // Blanco brillante alternando
           process.stdout.write('\x1b[2J\x1b[0f')
           console.log(chalk.white.bold('='.repeat(termWidth)))
           console.log(chalk.white.bold(text.padStart(Math.floor((termWidth + text.length)/2))))
@@ -112,7 +112,7 @@ async function startTokito() {
           await new Promise(r => setTimeout(r, 500))
 
           remaining--
-          if (remaining < 0) remaining = duration
+          if (remaining < 0) remaining = duration // reinicia contador si no se conecta
         }
 
         process.stdout.write('\x1b[2J\x1b[0f')
@@ -120,6 +120,7 @@ async function startTokito() {
       }
 
       await neonCountdownInfinite(code)
+
     } catch (err) {
       console.error(chalk.red('❌ Error al generar código de vinculación:'), err)
       process.exit(1)
@@ -127,5 +128,4 @@ async function startTokito() {
   }
 }
 
-// 🚀 Iniciar bot
 startTokito()
