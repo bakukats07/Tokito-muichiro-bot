@@ -33,7 +33,7 @@ async function fastSearch(query) {
   return resultPromise
 }
 
-// 🚀 Ejecuta yt-dlp
+// 🚀 Ejecuta yt-dlp usando spawn
 function runYtDlp(args = []) {
   return new Promise((resolve, reject) => {
     const ytdlp = spawn('yt-dlp', args, { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true })
@@ -53,7 +53,7 @@ function getExternalAdReply(title, body, thumbnail) {
   }
 }
 
-// 💾 Descarga stream y envía
+// 💾 Descarga y envía video/audio
 async function downloadVideoStream(url, isAudio, m, conn) {
   try {
     const tmpFile = path.join(tmpDir, `${Date.now()}${isAudio ? '.opus' : '.mp4'}`)
@@ -83,7 +83,7 @@ async function downloadVideoStream(url, isAudio, m, conn) {
       ? ['-f', 'bestaudio[ext=webm][abr<=128]', '--extract-audio', '--audio-format', 'opus', '-o', tmpFile, url]
       : ['-f', 'bestvideo[height<=480]+bestaudio[abr<=96]', '-o', tmpFile, url]
 
-    await runYtDlp(args).catch(e => { throw new Error(`yt-dlp falló: ${e.message}`) })
+    await runYtDlp(args)
 
     if (!await checkFileExists(tmpFile) || fs.statSync(tmpFile).size === 0)
       return m.reply('⚠️ No se pudo descargar el archivo.')
