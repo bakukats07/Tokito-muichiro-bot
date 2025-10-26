@@ -1,118 +1,106 @@
-/**
- * Tokito Muichiro Bot — v1.8.2
- * Desarrollado y adaptado por: Skycloud🐼
- * Compatible con estructuras remodeladas 2025
- */
-
-import './settings.js'
-import { createRequire } from 'module'
-import { fileURLToPath } from 'url'
-import { join, dirname } from 'path'
-import fs from 'fs'
-import chalk from 'chalk'
-import { Boom } from '@hapi/boom'
-import P from 'pino'
 import pkg from '@whiskeysockets/baileys'
-import { smsg } from './lib/simple.js'
+import pino from 'pino'
+import fs from 'fs'
+import path from 'path'
+import chalk from 'chalk'
+import { fileURLToPath } from 'url'
+import { settings } from './settings.js'
 
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion
-} = pkg
+const { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, DisconnectReason } = pkg
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const require = createRequire(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-global.APIKeys = new Map()
-global.plugins = {}
-global.db = { data: { users: {}, chats: {}, settings: {} } }
+async function startTokito() {
+  const sessionPath = path.join(__dirname, './sessions')
+  if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath)
 
-global.loadDatabase = async function () {
-  const dbFile = './database.json'
-  if (fs.existsSync(dbFile)) {
-    global.db.data = JSON.parse(fs.readFileSync(dbFile))
-  } else {
-    fs.writeFileSync(dbFile, JSON.stringify(global.db.data, null, 2))
-  }
-}
+  const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
+  const { version } = await fetchLatestBaileysVersion()
+  const logger = pino({ level: 'silent' })
 
-global.saveDatabase = async function () {
-  fs.writeFileSync('./database.json', JSON.stringify(global.db.data, null, 2))
-}
-
-// Carga dinámica de plugins
-async function loadPlugins() {
-  const folder = join(__dirname, 'plugins')
-  const files = fs.readdirSync(folder).filter(f => f.endsWith('.js'))
-  for (const file of files) {
-    try {
-      const pluginPath = join(folder, file)
-      const plugin = (await import(`file://${pluginPath}?update=${Date.now()}`)).default
-      global.plugins[file] = plugin
-      console.log(chalk.green(`✓ Plugin cargado: ${file}`))
-    } catch (e) {
-      console.log(chalk.red(`✗ Error al cargar el plugin ${file}:`), e)
-    }
-  }
-}
-
-// Función principal
-async function startBot() {
-  await global.loadDatabase()
-  const { state, saveCreds } = await useMultiFileAuthState('./session')
-  const { version, isLatest } = await fetchLatestBaileysVersion()
-  const logger = P({ level: 'silent' })
+  console.log(chalk.cyanBright('\n🌫️ Iniciando Tokito-Muichiro-Bot...\n'))
 
   const conn = makeWASocket({
     version,
-    printQRInTerminal: true,
-    auth: state,
+    printQRInTerminal: settings.authMethod === 'qr',
     logger,
-    browser: ['Tokito-Muichiro-Bot', 'Safari', '1.8.2']
+    browser: ['Tokito-Muichiro-Bot', 'Edge', '10.0'],
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, logger)
+    },
+    generateHighQualityLinkPreview: true,
+    syncFullHistory: false,
   })
 
+  // 🔐 Si no hay registro, genera el código de 8 dígitos automáticamente
+  if (settings.authMethod === 'pairing' && !conn.authState.creds.registered) {
+    const phoneNumber = settings.phoneNumber?.replace(/[^0-9]/g, '')
+    if (!phoneNumber) {
+      console.log(chalk.red('⚠️ No se encontró el número de teléfono en settings.js'))
+      process.exit(1)
+    }
+    const code = await conn.requestPairingCode(phoneNumber)
+    console.log(chalk.greenBright(`\n🔢 Código de vinculación (8 dígitos): ${chalk.yellow(code)}\n`))
+    console.log(chalk.gray('👉 En tu WhatsApp: Dispositivos vinculados → Introducir código\n'))
+  }
+
+  // 🧠 Evento: conexión / reconexión automática
   conn.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update
     if (connection === 'close') {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-      console.log(chalk.yellowBright('⚠️ Conexión cerrada. Reconectando...'))
-      if (shouldReconnect) startBot()
-      else console.log(chalk.red('❌ Sesión cerrada definitivamente.'))
+      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
+      if (reason === DisconnectReason.loggedOut) {
+        console.log(chalk.red('🔴 Sesión cerrada. Elimina la carpeta /sessions y vuelve a vincular.'))
+        process.exit(0)
+      } else {
+        console.log(chalk.yellow('🌀 Reintentando conexión...'))
+        startTokito()
+      }
     } else if (connection === 'open') {
-      console.log(chalk.greenBright('✅ Bot conectado correctamente.'))
+      console.log(chalk.greenBright('✅ Conectado exitosamente a WhatsApp!'))
     }
   })
 
+  // 💾 Guardar sesión cada vez que cambie
   conn.ev.on('creds.update', saveCreds)
+
+  // 🔄 Cargar plugins dinámicamente
+  const pluginFolder = path.join(__dirname, 'plugins')
+  const pluginFiles = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
+  for (let file of pluginFiles) {
+    const plugin = await import(`./plugins/${file}`)
+    console.log(chalk.magenta(`⚙️  Plugin cargado: ${file}`))
+  }
+
+  // 💬 Evento de mensaje nuevo
   conn.ev.on('messages.upsert', async ({ messages }) => {
     try {
-      const m = smsg(conn, messages[0])
+      const m = messages[0]
       if (!m.message) return
-      await (await import('./handler.js')).handler.call(conn, { messages: [m] })
-    } catch (err) {
-      console.error(chalk.red('Error en mensajes.upsert:'), err)
+
+      const from = m.key.remoteJid
+      const type = Object.keys(m.message)[0]
+      const text = m.message.conversation || m.message.extendedTextMessage?.text || ''
+      const prefix = settings.prefixes.find(p => text.startsWith(p))
+      if (!prefix) return
+
+      const command = text.slice(prefix.length).trim().split(/ +/).shift().toLowerCase()
+      const args = text.trim().split(/ +/).slice(1)
+
+      // Carga plugins por comando
+      for (let file of pluginFiles) {
+        const plugin = await import(`./plugins/${file}`)
+        if (plugin.default?.command?.includes(command)) {
+          await plugin.default.run(conn, m, { text, args, command, prefix })
+          break
+        }
+      }
+    } catch (e) {
+      console.error(chalk.red('Error en message handler:'), e)
     }
   })
 }
 
-// Observa cambios en archivos para recargar
-let files = ['./handler.js', './settings.js']
-for (let file of files) {
-  fs.watchFile(file, async () => {
-    fs.unwatchFile(file)
-    console.log(chalk.cyan(`🔄 ${file} actualizado, recargando módulo...`))
-    if (file === './handler.js') {
-      delete import.cache[file]
-      await import(`file://${join(__dirname, 'handler.js')}?update=${Date.now()}`)
-    } else {
-      await import(`file://${join(__dirname, 'settings.js')}?update=${Date.now()}`)
-    }
-  })
-}
-
-await loadPlugins()
-startBot()
+startTokito()
